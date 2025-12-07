@@ -41,13 +41,13 @@ namespace TIReportGenerator
         {
             TIReportGeneratorPlugin.Log.LogInfo("GameControl initialization complete.");
             if (saveName != null) {
-                GenerateReport(saveName);
+                GenerateResourceReport(saveName);
             }
         }
-        private static void GenerateReport(string saveName)
+        private static void GenerateResourceReport(string saveName)
         {
             var savePath = TIUtilities.GetSaveFilePath(saveName);
-            var reportPath = Path.Combine(Path.GetDirectoryName(savePath), $"report_{Path.GetFileNameWithoutExtension(savePath)}.md");
+            var reportPath = Path.Combine(Path.GetDirectoryName(savePath), $"report_resources_{Path.GetFileNameWithoutExtension(savePath)}.md");
 
             using (var writer = new StreamWriter(reportPath))
             {
@@ -68,9 +68,9 @@ namespace TIReportGenerator
                 var resourceHeaders = resourceNames.SelectMany(name => new string[] {name, $"{name}/mo"})
                                                    .ToList<string>();
                 var headers = new string[] { "Name", "Player" }.Concat(resourceNames)
-                                                               .AddItem("Mission Control Usage")
-                                                               .AddItem("Mission Control Capacity")
-                                                               .AddItem("Research" );
+                                                               .AddItem("Mission Control (Usage/Capacity)")
+                                                               .AddItem("Research" )
+                                                               .AddItem("Control Points (Usage/Capacity)");
 
                 writer.WriteLine(string.Join(", ", headers));
 
@@ -88,9 +88,11 @@ namespace TIReportGenerator
                                     $"{faction.GetMonthlyIncome(resource):+0.0;-0.0; 0.0}"
                             )
                         ) +
-                        $", {faction.GetMissionControlUsage():F0}, " +
+                        $", {faction.GetMissionControlUsage():F0}/" +
                         $"{faction.GetMonthlyIncome(FactionResource.MissionControl)}, " +
-                        $"{faction.GetMonthlyIncome(FactionResource.Research):+0.0;-0.0; 0.0},"
+                        $"{faction.GetMonthlyIncome(FactionResource.Research):+0.0;-0.0; 0.0}, " +
+                        $"{faction.GetBaselineControlPointMaintenanceCost():F0}/" +
+                        $"{faction.GetControlPointMaintenanceFreebieCap():F0}"
                     );
                 }
             }
