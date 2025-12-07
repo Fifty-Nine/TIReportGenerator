@@ -1,4 +1,5 @@
 using BepInEx;
+using BetterConsoleTables;
 using HarmonyLib;
 using PavonisInteractive.TerraInvicta;
 using UnityEngine;
@@ -44,7 +45,7 @@ namespace TIReportGenerator
                 GenerateResourceReport(saveName);
             }
         }
-        private static void GenerateResourceReport(string saveName)
+        private static void GenerateResourceReportLegacy(string saveName)
         {
             var savePath = TIUtilities.GetSaveFilePath(saveName);
             var reportPath = Path.Combine(Path.GetDirectoryName(savePath), $"report_resources_{Path.GetFileNameWithoutExtension(savePath)}.md");
@@ -96,6 +97,20 @@ namespace TIReportGenerator
                     );
                 }
             }
+            TIReportGeneratorPlugin.Log.LogInfo($"Report written to {reportPath}");
+        }
+
+        private static void GenerateResourceReport(string saveName)
+        {
+            TIReportGeneratorPlugin.Log.LogInfo($"Generating faction resource report");
+
+            var savePath = TIUtilities.GetSaveFilePath(saveName);
+            var reportPath = Path.Combine(Path.GetDirectoryName(savePath), $"report_resources_{Path.GetFileNameWithoutExtension(savePath)}.md");
+
+            using var writer = new StreamWriter(reportPath);
+            writer.WriteLine($"# Faction Resource Report as of {TITimeState.Now()}");
+            writer.WriteLine(Renderers.RenderMarkdownTable<TIFactionState>(GameStateManager.IterateByClass<TIFactionState>(), Schemas.FactionResources));
+
             TIReportGeneratorPlugin.Log.LogInfo($"Report written to {reportPath}");
         }
     }
