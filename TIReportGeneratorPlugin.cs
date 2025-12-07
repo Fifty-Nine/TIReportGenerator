@@ -52,47 +52,49 @@ namespace TIReportGenerator
             using (var writer = new StreamWriter(reportPath))
             {
                 writer.WriteLine($"# Report for {Path.GetFileName(savePath)}");
-                writer.WriteLine();
 
                 var date = TITimeState.Now();
-                writer.WriteLine($"**Date:** {date}");
-                writer.WriteLine();
+                writer.WriteLine($"# Game date: {date}");
 
+                var specialResources = new List<FactionResource> {
+                    FactionResource.None,
+                    FactionResource.MissionControl,
+                    FactionResource.Research
+                };
                 var resourceValues = Enum.GetValues(typeof(FactionResource))
                                          .Cast<FactionResource>()
-                                         .Where(value => value != FactionResource.None);
+                                         .Where(value => !specialResources.Contains(value));
                 var resourceNames = resourceValues.Select(value => value.ToString());
+                var resourceHeaders = resourceNames.SelectMany(name => new string[] {name, $"{name}/mo"})
+                                                   .ToList<string>();
+                var headers = new string[] { "Name", "Player" }.Concat(resourceNames)
+                                                               .AddItem("Mission Control Usage")
+                                                               .AddItem("Mission Control Capacity")
+                                                               .AddItem("Research" );
 
-                writer.WriteLine("## Factions");
-                writer.Write("| Name ");
-
-                foreach (string resource in resourceNames) {
-                    writer.Write($"| {resource} ");
-                }
-                writer.WriteLine("|");
-
-                foreach (string resource in resourceNames) {
-                    writer.Write("|---");
-                }
-                writer.WriteLine("|");
+                writer.WriteLine(string.Join(", ", headers));
 
                 foreach (var faction in GameStateManager.IterateByClass<TIFactionState>())
                 {
                     if (faction.IsAlienFaction) continue;
-                    var player = GameControl.control.activePlayer == faction ? " (player)" : " ";
-                    writer.Write(
-                        $"| {faction.displayName}{player}"
+                    var player = GameControl.control.activePlayer == faction ? "yes" : "no";
+                    writer.WriteLine(
+                        $"{faction.displayName}, {player}, " +
+                        string.Join(
+                            ", ",
+                            resourceValues.Select(
+                                resource =>
+                                    $"{faction.GetCurrentResourceAmount(resource):F1}, " +
+                                    $"{faction.GetMonthlyIncome(resource):+0.0;-0.0; 0.0}"
+                            )
+                        ) +
+                        $", {faction.GetMissionControlUsage():F0}, " +
+                        $"{faction.GetMonthlyIncome(FactionResource.MissionControl)}, " +
+                        $"{faction.GetMonthlyIncome(FactionResource.Research):+0.0;-0.0; 0.0},"
                     );
-
-                    foreach (var resource in resourceValues) {
-                        float amt = faction.GetCurrentResourceAmount(resource);
-                        float income = faction.GetMonthlyIncome(resource);
-                        writer.Write($"| {amt:F1} ({income:F1}/mo) ");
-                    }
-                    writer.WriteLine("|");
                 }
             }
-            TIReportGeneratorPlugin.Log.LogInfo($"[TIReport] Report written to {reportPath}");
+            TIReportGeneratorPlugin.Log.LogInfo($"Report written to {reportPath}");
         }
     }
 
@@ -104,7 +106,7 @@ namespace TIReportGenerator
         public static void LoadSaveFilePrefix(LoadMenuController __instance)
         {
             var name = __instance.saveList.selectedButton.saveInfo.name;
-            TIReportGeneratorPlugin.Log.LogInfo($"[TIReport] Save name set to {name}");
+            TIReportGeneratorPlugin.Log.LogInfo($"Save name set to {name}");
             GameControlPatch.saveName = name;
         }
     }
