@@ -37,4 +37,17 @@ public static class Renderers
 
         return result.ToString();
     }
+
+    public static string RenderMarkdownList<T>(IEnumerable<T> rows,
+                                               ObjectSchema<T> schema)
+    {
+        StringBuilder result = new();
+        foreach (var row in rows)
+        {
+            var cells = schema.Fields.Select(col => col.Render(row));
+
+            result.AppendLine(" - " + string.Join(", ", cells));
+        }
+        return result.ToString();
+    }
 }

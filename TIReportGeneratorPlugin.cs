@@ -52,6 +52,14 @@ namespace TIReportGenerator
                 GenerateReport(GenerateNationsReport, "nations", reportPath);
                 GenerateReport(GenerateHabsAndStationsReport, "habs_and_stations", reportPath);
                 GenerateReport(GenerateFleetReport, "fleets", reportPath);
+                GenerateReport(GenerateShipTemplateReport, "ship_templates", reportPath);
+
+                /* todo:
+                     - councilors/orgs
+                     - tech tree
+                     - army deployments
+                     - alien activity
+                     */
             }
         }
 
@@ -127,11 +135,44 @@ namespace TIReportGenerator
 
         private static void GenerateFleetReport(StreamWriter writer)
         {
-            writer.WriteLine("$# Fleets Report as of {TITimeState.Now()}");
+            writer.WriteLine($"# Fleets Report as of {TITimeState.Now()}");
 
             foreach (var fleet in GameStateManager.IterateByClass<TISpaceFleetState>())
             {
                 writer.WriteLine(Renderers.RenderMarkdownDescription(fleet, Schemas.Fleets));
+                writer.WriteLine(Renderers.RenderMarkdownTable(fleet.ships, Schemas.Ships));
+            }
+        }
+
+        private static void GenerateShipTemplateReport(StreamWriter writer)
+        {
+            writer.WriteLine($"# Ship Templates Report as of {TITimeState.Now()}");
+
+            var allTemplates = GameStateManager.IterateByClass<TIFactionState>().SelectMany(f => f.shipDesigns);
+
+            foreach (var template in allTemplates)
+            {
+                writer.WriteLine(Renderers.RenderMarkdownDescription(template, Schemas.ShipTemplate));
+                writer.WriteLine("Nose Weapons:");
+                writer.WriteLine(Renderers.RenderMarkdownList(template.noseWeapons, Schemas.ShipWeapon));
+                writer.WriteLine("Hull Weapons:");
+                writer.WriteLine(Renderers.RenderMarkdownList(template.hullWeapons, Schemas.ShipWeapon));
+                writer.WriteLine("Utility modules:");
+                writer.WriteLine(Renderers.RenderMarkdownList(template.utilityModules, Schemas.ShipUtilityModule));
+                writer.WriteLine("Full Refuel Cost:");
+                foreach (var kvp in Schemas.CollectRefuelCosts(template))
+                {
+                    if (kvp.Value < 0.05f && kvp.Value > -0.05f) continue;
+                    writer.WriteLine($"  {TIUtilities.GetResourceString(kvp.Key)}: {TIUtilities.FormatSmallNumber(kvp.Value)}");
+                }
+                writer.WriteLine();
+                writer.WriteLine("Build Cost (includes initial propellant):");
+                foreach (var kvp in Schemas.CollectBuildCosts(template))
+                {
+                    if (kvp.Value < 0.05f && kvp.Value > -0.05f) continue;
+                    writer.WriteLine($"  {TIUtilities.GetResourceString(kvp.Key)}: {TIUtilities.FormatSmallNumber(kvp.Value)}");
+                }
+                writer.WriteLine();
             }
         }
     }
