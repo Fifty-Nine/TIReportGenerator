@@ -50,6 +50,7 @@ namespace TIReportGenerator
                 Directory.CreateDirectory(reportPath.ToString());
                 GenerateReport(GenerateResourceReport, "faction_resources", reportPath);
                 GenerateReport(GenerateNationsReport, "nations", reportPath);
+                GenerateReport(GenerateHabsAndStationsReport, "habs_and_stations", reportPath);
             }
         }
 
@@ -111,6 +112,16 @@ namespace TIReportGenerator
                         Schemas.NationalRelations
                     )
                 );
+            }
+        }
+
+        private static void GenerateHabsAndStationsReport(StreamWriter writer)
+        {
+            writer.WriteLine($"# Habs and Stations Report as of {TITimeState.Now()}");
+
+            foreach (var hab in GameStateManager.IterateByClass<TIHabState>())
+            {
+                writer.Write(Renderers.RenderMarkdownDescription(hab, Schemas.HabsAndStations));
             }
         }
     }

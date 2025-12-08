@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using PavonisInteractive.TerraInvicta;
 
 public static class Schemas
@@ -12,6 +13,15 @@ public static class Schemas
     private static Func<TIFactionState, (float, float)> GetResourceValues(FactionResource r)
     {
         return f => (f.GetCurrentResourceAmount(r), f.GetMonthlyIncome(r));
+    }
+    private static Func<TIHabState, float> GetNetHabIncome(FactionResource r)
+    {
+        return hab => hab.GetNetCurrentMonthlyIncome(hab.coreFaction, r, includeInactivesIncomeAndSupport: false);
+    }
+
+    private static Func<TIHabState, float> GetHabTechBonus(TechCategory c)
+    {
+        return hab => hab.GetNetTechBonusByFaction(c, hab.coreFaction, includeInactives: false);
     }
 
     private static string FormatCapacity((float usage, float capacity) values)
@@ -33,6 +43,11 @@ public static class Schemas
     private static string FormatBigNumber<T>(T v)
     {
         return TIUtilities.FormatBigNumber(Convert.ToDouble(v));
+    }
+
+    private static string FormatSmallNumber<T>(T v)
+    {
+        return TIUtilities.FormatSmallNumber(Convert.ToDouble(v));
     }
 
     private static string FormatBigOrSmallNumber<T>(T v)
@@ -90,11 +105,10 @@ public static class Schemas
             .AddField("Relation", kvp => kvp.Item2)
     ;
 
-
     public static ObjectSchema<TINationState> Nations = new ObjectSchema<TINationState>()
         .AddField("Name", n => n.displayName)
-        .AddField("IP", n => n.BaseInvestmentPoints_month())
-        .AddField("GDP/Cap", n => n.perCapitaGDP, "N0")
+        .AddField("IP", n => n.BaseInvestmentPoints_month(), "F2")
+        .AddField("GDP/Cap", n => n.perCapitaGDP, v => $"${v:F0}")
         .AddField("Funding", n => n.spaceFundingIncome_month, FormatBigOrSmallNumber)
         .AddField("Boost", n => n.boostIncome_month_dekatons, FormatBigOrSmallNumber)
         .AddField("MC", n => n.currentMissionControl, "N0")
@@ -113,6 +127,42 @@ public static class Schemas
         .AddField("Nukes", n => n.numNuclearWeapons)
         .AddField("At War", n => n.atWar, FormatBool)
     ;
-
-
+    public static ObjectSchema<TIHabState> HabsAndStations = new ObjectSchema<TIHabState>()
+        .AddField("Name", hab => hab.displayName)
+        .AddField("Type", hab => hab.habType, v => v.ToString())
+        .AddField("Location", hab => hab.LocationName)
+        .AddField("Tier", hab => hab.tier)
+        .AddField("Defended", hab => hab.coreDefended, FormatBool)
+        .AddField("Docked Fleets", hab => hab.dockedFleets.Count)
+        .AddField("Module Count", hab => hab.AllModules().Count)
+        .AddField("Modules Under Construction", hab => hab.AllModules().Count(state => state.underConstruction))
+        .AddField("Unpowered Modules", hab => hab.AllModules().Count(state => !state.powered))
+        .AddField("Free Slots", hab => hab.AvailableSlots().Count)
+        .AddField("Population", hab => hab.crew)
+        .AddField("Can Resupply", hab => hab.AllowsResupply(hab.coreFaction, allowHumanTheft: false), FormatBool)
+        .AddField("Can Construct", hab => hab.AllowsShipConstruction(hab.coreFaction), FormatBool)
+        .AddField("Construction Time", hab => hab.GetModuleConstructionTimeModifier(), "P0")
+        .AddField("Money", GetNetHabIncome(FactionResource.Money), FormatSmallNumber)
+        .AddField("Influence", GetNetHabIncome(FactionResource.Influence), FormatSmallNumber)
+        .AddField("Ops", GetNetHabIncome(FactionResource.Operations), FormatSmallNumber)
+        .AddField("Boost", GetNetHabIncome(FactionResource.Boost), FormatSmallNumber)
+        .AddField("MissionControl", GetNetHabIncome(FactionResource.MissionControl), "F0")
+        .AddField("Research", GetNetHabIncome(FactionResource.Research), FormatSmallNumber)
+        .AddField("Projects", GetNetHabIncome(FactionResource.Projects), FormatSmallNumber)
+        .AddField("Water", GetNetHabIncome(FactionResource.Water), FormatSmallNumber)
+        .AddField("Volatiles", GetNetHabIncome(FactionResource.Volatiles), FormatSmallNumber)
+        .AddField("Metals", GetNetHabIncome(FactionResource.Metals), FormatSmallNumber)
+        .AddField("Nobles", GetNetHabIncome(FactionResource.NobleMetals), FormatSmallNumber)
+        .AddField("Fissiles", GetNetHabIncome(FactionResource.Fissiles), FormatSmallNumber)
+        .AddField("Antimatter", GetNetHabIncome(FactionResource.Antimatter), FormatSmallNumber)
+        .AddField("Exotics", GetNetHabIncome(FactionResource.Exotics), FormatSmallNumber)
+        .AddField("Materials Lab Bonus", GetHabTechBonus(TechCategory.Materials), "P1")
+        .AddField("Space Science Lab Bonus", GetHabTechBonus(TechCategory.SpaceScience), "P1")
+        .AddField("Energy Lab Bonus", GetHabTechBonus(TechCategory.Energy), "P1")
+        .AddField("Life Science Lab Bonus", GetHabTechBonus(TechCategory.LifeScience), "P1")
+        .AddField("Military Science Lab Bonus", GetHabTechBonus(TechCategory.MilitaryScience), "P1")
+        .AddField("Information Science Lab Bonus", GetHabTechBonus(TechCategory.InformationScience), "P1")
+        .AddField("Social Science Lab Bonus", GetHabTechBonus(TechCategory.SocialScience), "P1")
+        .AddField("Xenology Lab Bonus", GetHabTechBonus(TechCategory.Xenology), "P1")
+    ;
 };
