@@ -51,6 +51,7 @@ namespace TIReportGenerator
                 GenerateReport(GenerateResourceReport, "faction_resources", reportPath);
                 GenerateReport(GenerateNationsReport, "nations", reportPath);
                 GenerateReport(GenerateHabsAndStationsReport, "habs_and_stations", reportPath);
+                GenerateReport(GenerateFleetReport, "fleets", reportPath);
             }
         }
 
@@ -75,7 +76,6 @@ namespace TIReportGenerator
         private static void GenerateResourceReport(StreamWriter writer)
         {
             writer.WriteLine($"# Faction Resource Report as of {TITimeState.Now()}");
-            writer.WriteLine(Renderers.RenderMarkdownTable<TIFactionState>(GameStateManager.IterateByClass<TIFactionState>(), Schemas.FactionResources));
             foreach (var faction in GameStateManager.IterateByClass<TIFactionState>()) {
                 writer.WriteLine(Renderers.RenderMarkdownDescription<TIFactionState>(
                     faction,
@@ -122,6 +122,16 @@ namespace TIReportGenerator
             foreach (var hab in GameStateManager.IterateByClass<TIHabState>())
             {
                 writer.Write(Renderers.RenderMarkdownDescription(hab, Schemas.HabsAndStations));
+            }
+        }
+
+        private static void GenerateFleetReport(StreamWriter writer)
+        {
+            writer.WriteLine("$# Fleets Report as of {TITimeState.Now()}");
+
+            foreach (var fleet in GameStateManager.IterateByClass<TISpaceFleetState>())
+            {
+                writer.WriteLine(Renderers.RenderMarkdownDescription(fleet, Schemas.Fleets));
             }
         }
     }

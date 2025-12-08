@@ -66,6 +66,43 @@ public static class Schemas
         return TIFactionIdeologyTemplate.GetFactionByIdeology(fi).displayName;
     }
 
+
+    private static string FleetStatus(TISpaceFleetState fleet)
+    {
+        if (fleet.unavailableForOperations)
+        {
+            return $"Unavailable for operations until {fleet.returnToOperationsTime.ToCustomTimeDateString()}";
+        }
+
+        if (fleet.inTransfer)
+        {
+            return $"Transferring to {fleet.trajectory.destination.displayName}, arrival at {fleet.trajectory.arrivalTime.ToCustomTimeDateString()}";
+        }
+
+        if (fleet.currentOperations.Count == 0) {
+            return fleet.dockedOrLanded ? "Docked" : "Idle";
+        }
+
+        var operation = fleet.currentOperations.First();
+        return operation.operation.GetDescription();
+    }
+
+    private static (float, float) FleetDeltaV(TISpaceFleetState fleet)
+    {
+        return (fleet.currentDeltaV_kps, fleet.maxDeltaV_kps);
+    }
+
+    private static string FormatDeltaV((float current, float max) deltaV)
+    {
+        return $"{deltaV.current:F1} / {deltaV.max:F1} kps";
+    }
+
+    private static string FormatAccelerationInGs(float gs)
+    {
+        if (gs >= 1.0) return $"{gs:N1} g";
+        return $"{gs*1000:N1} mg";
+    }
+
     public static ObjectSchema<TIFactionState> FactionResources = new ObjectSchema<TIFactionState>()
         .AddField("Faction", f => $@"{f.displayName}{(f == GameControl.control.activePlayer ? " (player)" : "")}")
         .AddField("Money", GetResourceValues(FactionResource.Money), FormatResourceIncome)
@@ -164,5 +201,16 @@ public static class Schemas
         .AddField("Information Science Lab Bonus", GetHabTechBonus(TechCategory.InformationScience), "P1")
         .AddField("Social Science Lab Bonus", GetHabTechBonus(TechCategory.SocialScience), "P1")
         .AddField("Xenology Lab Bonus", GetHabTechBonus(TechCategory.Xenology), "P1")
+    ;
+
+    public static ObjectSchema<TISpaceFleetState> Fleets = new ObjectSchema<TISpaceFleetState>()
+        .AddField("Name", f => f.GetDisplayName(GameControl.control.activePlayer))
+        .AddField("Location", f => f.GetLocationDescription(GameControl.control.activePlayer, capitalize: true, expand: false))
+        .AddField("Status", FleetStatus)
+        .AddField("Combat Power", f => f.SpaceCombatValue(), "N0")
+        .AddField("Ships", f => f.ships.Count)
+        .AddField("Delta-V", FleetDeltaV, FormatDeltaV)
+        .AddField("Cruise Acc.", f => f.cruiseAcceleration_gs, FormatAccelerationInGs)
+        .AddField("Homeport", f => f.homeport?.displayName ?? "None")
     ;
 };
