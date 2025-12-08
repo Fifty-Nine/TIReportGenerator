@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-public interface IReportColumn
+public interface IReportField<T>
 {
-    public string Header { get; }
-    public string Render(object value);
+    public string Name { get; }
+    public string Render(T value);
 }
 
-public class ReportColumn<T, U> : IReportColumn
+public class ReportField<T, U> : IReportField<T>
 {
     private Func<U, string> format;
 
-    public string Header { get; }
+    public string Name { get; }
     public Func<T, U> Accessor { get; }
     public Func<U, string> Format {
         get => format;
@@ -23,40 +23,40 @@ public class ReportColumn<T, U> : IReportColumn
         }
     }
 
-    string IReportColumn.Render(object value)
+    string IReportField<T>.Render(T value)
     {
-        return Format(Accessor((T)value));
+        return Format(Accessor(value));
     }
 
-    public ReportColumn(string header, Func<T, U> accessor, Func<U, string> format = null)
+    public ReportField(string header, Func<T, U> accessor, Func<U, string> format = null)
     {
-        Header = header;
+        Name = header;
         Accessor = accessor;
         Format = format;
     }
 }
 
-// A simple builder to hold the definitions
-public class ReportSchema<T>
+/** A schema builder for tabular layouts. */
+public class ObjectSchema<T>
 {
-    public List<IReportColumn> Columns { get; } = new List<IReportColumn>();
+    public List<IReportField<T>> Fields { get; } = new List<IReportField<T>>();
 
     // Fluent syntax for adding columns
-    public ReportSchema<T> AddColumn<U>(string header, Func<T, U> accessor)
+    public ObjectSchema<T> AddField<U>(string header, Func<T, U> accessor)
     {
-        Columns.Add(new ReportColumn<T, U>(header, accessor));
+        Fields.Add(new ReportField<T, U>(header, accessor));
         return this;
     }
 
-    public ReportSchema<T> AddColumn<U>(string header, Func<T, U> accessor, Func<U, string> format)
+    public ObjectSchema<T> AddField<U>(string header, Func<T, U> accessor, Func<U, string> format)
     {
-        Columns.Add(new ReportColumn<T, U>(header, accessor, format));
+        Fields.Add(new ReportField<T, U>(header, accessor, format));
         return this;
     }
 
-    public ReportSchema<T> AddColumn<U>(string header, Func<T, U> accessor, string format)
+    public ObjectSchema<T> AddField<U>(string header, Func<T, U> accessor, string format)
     {
-        Columns.Add(new ReportColumn<T, U>(header, accessor, o => string.Format("{0:" + format + "}", o)));
+        Fields.Add(new ReportField<T, U>(header, accessor, o => string.Format("{0:" + format + "}", o)));
         return this;
     }
 }

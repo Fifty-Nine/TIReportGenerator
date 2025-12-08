@@ -7,6 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.CodeDom.Compiler;
+using PavonisInteractive.TerraInvicta.Systems;
 
 namespace TIReportGenerator
 {
@@ -42,76 +45,73 @@ namespace TIReportGenerator
         {
             TIReportGeneratorPlugin.Log.LogInfo("GameControl initialization complete.");
             if (saveName != null) {
-                GenerateResourceReport(saveName);
+                var savePath = TIUtilities.GetSaveFilePath(saveName);
+                var reportPath = Path.Combine(Path.GetDirectoryName(savePath), $"report_{saveName}");
+                Directory.CreateDirectory(reportPath.ToString());
+                GenerateReport(GenerateResourceReport, "faction_resources", reportPath);
+                GenerateReport(GenerateNationsReport, "nations", reportPath);
             }
         }
-        private static void GenerateResourceReportLegacy(string saveName)
+
+        private static string GetReportPath(string name, string dir)
         {
-            var savePath = TIUtilities.GetSaveFilePath(saveName);
-            var reportPath = Path.Combine(Path.GetDirectoryName(savePath), $"report_resources_{Path.GetFileNameWithoutExtension(savePath)}.md");
-
-            using (var writer = new StreamWriter(reportPath))
-            {
-                writer.WriteLine($"# Report for {Path.GetFileName(savePath)}");
-
-                var date = TITimeState.Now();
-                writer.WriteLine($"# Game date: {date}");
-
-                var specialResources = new List<FactionResource> {
-                    FactionResource.None,
-                    FactionResource.MissionControl,
-                    FactionResource.Research
-                };
-                var resourceValues = Enum.GetValues(typeof(FactionResource))
-                                         .Cast<FactionResource>()
-                                         .Where(value => !specialResources.Contains(value));
-                var resourceNames = resourceValues.Select(value => value.ToString());
-                var resourceHeaders = resourceNames.SelectMany(name => new string[] {name, $"{name}/mo"})
-                                                   .ToList<string>();
-                var headers = new string[] { "Name", "Player" }.Concat(resourceNames)
-                                                               .AddItem("Mission Control (Usage/Capacity)")
-                                                               .AddItem("Research" )
-                                                               .AddItem("Control Points (Usage/Capacity)");
-
-                writer.WriteLine(string.Join(", ", headers));
-
-                foreach (var faction in GameStateManager.IterateByClass<TIFactionState>())
-                {
-                    if (faction.IsAlienFaction) continue;
-                    var player = GameControl.control.activePlayer == faction ? "yes" : "no";
-                    writer.WriteLine(
-                        $"{faction.displayName}, {player}, " +
-                        string.Join(
-                            ", ",
-                            resourceValues.Select(
-                                resource =>
-                                    $"{faction.GetCurrentResourceAmount(resource):F1}, " +
-                                    $"{faction.GetMonthlyIncome(resource):+0.0;-0.0; 0.0}"
-                            )
-                        ) +
-                        $", {faction.GetMissionControlUsage():F0}/" +
-                        $"{faction.GetMonthlyIncome(FactionResource.MissionControl)}, " +
-                        $"{faction.GetMonthlyIncome(FactionResource.Research):+0.0;-0.0; 0.0}, " +
-                        $"{faction.GetBaselineControlPointMaintenanceCost():F0}/" +
-                        $"{faction.GetControlPointMaintenanceFreebieCap():F0}"
-                    );
-                }
-            }
-            TIReportGeneratorPlugin.Log.LogInfo($"Report written to {reportPath}");
+            return Path.Combine(dir, $"{name}.md");
         }
 
-        private static void GenerateResourceReport(string saveName)
+        private static void GenerateReport(Action<StreamWriter> fn, string name, string dir)
         {
-            TIReportGeneratorPlugin.Log.LogInfo($"Generating faction resource report");
+            TIReportGeneratorPlugin.Log.LogInfo($"Generating report: {name}");
 
-            var savePath = TIUtilities.GetSaveFilePath(saveName);
-            var reportPath = Path.Combine(Path.GetDirectoryName(savePath), $"report_resources_{Path.GetFileNameWithoutExtension(savePath)}.md");
+            var filePath = GetReportPath(name, dir);
+            using var writer = new StreamWriter(filePath);
+            fn(writer);
+            writer.Flush();
+            writer.Close();
 
-            using var writer = new StreamWriter(reportPath);
+            TIReportGeneratorPlugin.Log.LogInfo($"Report written to {filePath}");
+        }
+
+        private static void GenerateResourceReport(StreamWriter writer)
+        {
             writer.WriteLine($"# Faction Resource Report as of {TITimeState.Now()}");
             writer.WriteLine(Renderers.RenderMarkdownTable<TIFactionState>(GameStateManager.IterateByClass<TIFactionState>(), Schemas.FactionResources));
+            foreach (var faction in GameStateManager.IterateByClass<TIFactionState>()) {
+                writer.WriteLine(Renderers.RenderMarkdownDescription<TIFactionState>(
+                    faction,
+                    Schemas.FactionResources
+                ));
+            }
+        }
 
-            TIReportGeneratorPlugin.Log.LogInfo($"Report written to {reportPath}");
+        private static IEnumerable<(TINationState, string)> GetRelations(TINationState nation)
+        {
+            return nation.allies.Select(l => (l, "Ally"))
+                         .Concat(nation.wars.Select(l => (l, "War")))
+                         .Concat(nation.rivals.Select(l => (l, "Rival")));
+        }
+
+        private static void GenerateNationsReport(StreamWriter writer)
+        {
+            writer.WriteLine($"# Nations Report as of {TITimeState.Now()}");
+
+            foreach (var nation in GameStateManager.IterateByClass<TINationState>()) {
+                if (!nation.extant) continue;
+                writer.Write(Renderers.RenderMarkdownDescription<TINationState>(
+                    nation,
+                    Schemas.Nations
+                ));
+
+                writer.WriteLine("Control Points:");
+                writer.WriteLine(Renderers.RenderMarkdownTable(nation.controlPoints, Schemas.ControlPoint));
+                writer.WriteLine("Faction Support:");
+                writer.WriteLine(Renderers.RenderMarkdownTable(nation.publicOpinion, Schemas.PublicOpinion));
+                writer.WriteLine(
+                    Renderers.RenderMarkdownTable(
+                        GetRelations(nation),
+                        Schemas.NationalRelations
+                    )
+                );
+            }
         }
     }
 
