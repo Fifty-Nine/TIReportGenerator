@@ -1,16 +1,10 @@
 using BepInEx;
-using BetterConsoleTables;
 using HarmonyLib;
 using PavonisInteractive.TerraInvicta;
-using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.CodeDom.Compiler;
-using PavonisInteractive.TerraInvicta.Systems;
-using System.Runtime.InteropServices.ComTypes;
 
 namespace TIReportGenerator
 {
@@ -58,6 +52,7 @@ namespace TIReportGenerator
                 GenerateReport(GenerateProspectingReport, "prospecting", reportPath);
                 GenerateReport(GenerateOrgsReport, "orgs", reportPath);
                 GenerateReport(GenerateArmyReport, "armies", reportPath);
+                GenerateReport(GenerateFactionRelationsReport, "relations", reportPath);
                 /* todo:
                      - councilors
                      - alien activity
@@ -233,6 +228,14 @@ namespace TIReportGenerator
                                          .Where(a => !a.destroyed);
 
             writer.WriteLine(Renderers.RenderMarkdownTable(armies, Schemas.Armies));
+        }
+
+        private static void GenerateFactionRelationsReport(StreamWriter writer)
+        {
+            writer.WriteLine($"# Faction Relations Report as of {TITimeState.Now()}");
+            var relations = FactionRelation.BuildRelationsList(GameStateManager.AllHumanFactions());
+
+            writer.WriteLine(Renderers.RenderMarkdownTable(relations, Schemas.FactionRelations));
         }
     }
 

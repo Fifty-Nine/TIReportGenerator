@@ -158,7 +158,7 @@ public static class Schemas
     private static string FormatBatteryList(IEnumerable<TIBatteryTemplate> batteries)
     {
         if (batteries.Count() == 0) return "none";
-        return "[" + string.Join(", ", batteries.Select(b => b.displayName)) + "]";
+        return "[" + FormatList(batteries, b => b.displayName) + "]";
     }
 
     private static (string, int, float) GetShipTemplateNoseArmor(TISpaceShipTemplate t)
@@ -210,7 +210,7 @@ public static class Schemas
 
     public static string FormatResourceCost(TIResourcesCost c)
     {
-        return string.Join(", ", ResourceCostToDictionary(c).Select(kvp => $"{TIUtilities.FormatSmallNumber(kvp.Value)} {TIUtilities.GetResourceString(kvp.Key)}"));
+        return FormatList(ResourceCostToDictionary(c), kvp => $"{TIUtilities.FormatSmallNumber(kvp.Value)} {TIUtilities.GetResourceString(kvp.Key)}");
     }
     private static bool InProgress(TIGenericTechTemplate t)
     {
@@ -368,14 +368,14 @@ public static class Schemas
     {
         return GameStateManager.AllHumanFactions().All(f => fs.Contains(f))
             ? "Everyone"
-            : string.Join(", ", fs.Select(f => PlayerDisplayName(f)));
+            : FormatList(fs, f => PlayerDisplayName(f));
     }
 
     private static string GetProjectDisplayName(TIProjectTemplate p)
     {
         if (p.factionPrereq.Count() == 0) return p.displayName;
 
-        return $"{p.displayName} (" + string.Join(", ", p.factionPrereq) + ")";
+        return $"{p.displayName} (" + FormatList(p.factionPrereq) + ")";
     }
 
     private enum HabSiteStatus
@@ -417,7 +417,7 @@ public static class Schemas
 
     private static string FormatTraitRequirements(IEnumerable<TITraitTemplate> traits)
     {
-        return string.Join(", ", traits.Select(trait => trait.displayName));
+        return FormatList(traits, trait => trait.displayName);
     }
 
     private static Dictionary<CouncilorAttribute, int> GetOrgStatBonuses(TIOrgState org)
@@ -435,7 +435,7 @@ public static class Schemas
 
     private static string FormatStatBonuses(Dictionary<CouncilorAttribute, int> bonuses)
     {
-        return string.Join(", ", bonuses.Select(kvp => $"{kvp.Value:+0;-0;} {kvp.Key.ToString()}"));
+        return FormatList(bonuses, kvp => $"{kvp.Value:+0;-0;} {kvp.Key.ToString()}");
     }
 
     private static Dictionary<FactionResource, float> GetOrgIncomes(TIOrgState org)
@@ -456,17 +456,17 @@ public static class Schemas
 
     private static string FormatMissions(IEnumerable<TIMissionTemplate> missions)
     {
-        return string.Join(", ", missions.Select(mission => mission.displayName));
+        return FormatList(missions, mission => mission.displayName);
     }
 
     private static string FormatOrgIncomes(Dictionary<FactionResource, float> incomes)
     {
-        return string.Join(", ", incomes.Select(kvp => $"{kvp.Value:+0;-0;} {TIUtilities.GetResourceString(kvp.Key)}"));
+        return FormatList(incomes, kvp => $"{kvp.Value:+0;-0;} {TIUtilities.GetResourceString(kvp.Key)}");
     }
 
     private static string FormatTechBonuses(IEnumerable<TechBonus> bonuses)
     {
-        return string.Join(", ", bonuses.Select(b => $"{b.bonus:+0.0%;-0.0%; 0.0%} {TIGenericTechTemplate.GetTechCategoryString(b.category)}"));
+        return FormatList(bonuses, b => $"{b.bonus:+0.0%;-0.0%; 0.0%} {TIGenericTechTemplate.GetTechCategoryString(b.category)}");
     }
 
     private static string GetOtherOrgBonuses(TIOrgState org)
@@ -544,6 +544,17 @@ public static class Schemas
         }
 
         return $"Limbo (orbiting {PlayerDisplayName(faction)})";
+    }
+
+    public static string FormatList<T>(IEnumerable<T> list, Func<T, string> formatter = null)
+    {
+        formatter ??= o => o.ToString();
+        return string.Join(", ", list.Select(formatter));
+    }
+
+    public static string FormatTrivialList<T>(IEnumerable<T> list)
+    {
+        return FormatList(list);
     }
 
     public static ObjectSchema<TIFactionState> FactionResources = new ObjectSchema<TIFactionState>()
@@ -774,5 +785,13 @@ public static class Schemas
         .AddField("Strength", a => a.strength, "P0")
         .AddField("Navy", a => a.deploymentType == DeploymentType.Naval, FormatBool)
         .AddField("Status", GetArmyStatus)
+    ;
+
+    public static ObjectSchema<FactionRelation> FactionRelations = new ObjectSchema<FactionRelation>()
+        .AddField("Faction", r => PlayerDisplayName(r.From))
+        .AddField("Other Faction", r => PlayerDisplayName(r.To))
+        .AddField("War", r => r.AtWar, FormatBool)
+        .AddField("Opinion", r => r.Relationship)
+        .AddField("Treaties", r => r.Treaties, FormatTrivialList)
     ;
 };
