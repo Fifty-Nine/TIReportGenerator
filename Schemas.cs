@@ -210,6 +210,171 @@ public static class Schemas
     {
         return c.GetString("Relevant", includeCostStr: true, includeCompletionTime: false, completionTimeOnly: false);
     }
+    private static bool InProgress(TIGenericTechTemplate t)
+    {
+        var project = t as TIProjectTemplate;
+        if (project != null) return GameControl.control.activePlayer.CurrentlyActiveProjects().Contains(project);
+        return TIGlobalResearchState.CurrentResearchingTechs.Contains(t as TITechTemplate);
+    }
+
+    public enum TechStatus
+    {
+        /* Research finished. */
+        Completed,
+        /* Tech actively being researched. */
+        Active,
+        /* Unlocked and ready to research, but not yet in progress. */
+        Available,
+        /* Prerequisites complete, unlock not yet rolled or prohibited for faction. */
+        Locked,
+        /* Prerequisites not yet complete. */
+        Blocked,
+    };
+
+    public static TechStatus GetTechStatus(TITechTemplate t)
+    {
+        if (TIGlobalResearchState.TechFinished(t)) return TechStatus.Completed;
+        if (InProgress(t)) return TechStatus.Active;
+        if (TIGlobalResearchState.AvailableTechs().Contains(t)) return TechStatus.Available;
+        return TechStatus.Blocked;
+    }
+
+    public static TechStatus GetProjectStatus(TIProjectTemplate p)
+    {
+        var player = GameControl.control.activePlayer;
+        if (player.completedProjects.Contains(p)) return TechStatus.Completed;
+        if (InProgress(p)) return TechStatus.Active;
+        if (player.availableProjects.Contains(p)) return TechStatus.Available;
+        if (p.PrereqsSatisfied(
+            TIGlobalResearchState.FinishedTechs(),
+            player.completedProjects,
+            player))
+        {
+            return TechStatus.Locked;
+        }
+        return TechStatus.Blocked;
+    }
+
+    private static float GetInitialCost(TIGenericTechTemplate t)
+    {
+        return t.GetResearchCost(GameControl.control.activePlayer);
+    }
+
+    private static float GetRemainingCost(TITechTemplate t)
+    {
+        if (TIGlobalResearchState.TechFinished(t)) return 0.0f;
+        var cost = t.GetResearchCost(GameControl.control.activePlayer);
+
+        var idx = TIGlobalResearchState.CurrentResearchingTechs.IndexOf(t);
+        if (idx == -1) return cost;
+
+        var state = GameStateManager.GlobalResearch();
+
+        return cost - state.GetTechProgress(idx).accumulatedResearch;
+    }
+
+    private static float GetRemainingCost(TIProjectTemplate t)
+    {
+        var player = GameControl.control.activePlayer;
+        if (player.completedProjects.Contains(t)) return 0.0f;
+        var cost = t.GetResearchCost(player);
+        return cost - player.GetProjectProgressValueByTemplate(t);
+    }
+
+    private static float GetRemainingCost(TIGenericTechTemplate t)
+    {
+        if (t is TITechTemplate) return GetRemainingCost((TITechTemplate)t);
+        return GetRemainingCost((TIProjectTemplate)t);
+    }
+
+    private static float GetRemainingTreeCost(TIGenericTechTemplate t)
+    {
+        HashSet<TIGenericTechTemplate> incompleteAncestors = new();
+        Stack<TIGenericTechTemplate> stack = new Stack<TIGenericTechTemplate>();
+        stack.Push(t);
+
+        while (stack.Count() > 0)
+        {
+            var current = stack.Pop();
+
+            if (incompleteAncestors.Contains(current)) continue;
+
+            var selfCost = GetRemainingCost(current);
+            if (selfCost == 0.0f) continue;
+
+            incompleteAncestors.Add(current);
+            foreach (var prereq in current.TechPrereqs)
+            {
+                stack.Push(prereq);
+            }
+        }
+
+        float totalCost = 0.0f;
+        foreach (var tech in incompleteAncestors)
+        {
+            totalCost += GetRemainingCost(tech);
+        }
+        return totalCost;
+    }
+
+    private static (float?, float) GetResearchCosts(TIGenericTechTemplate t)
+    {
+        return (InProgress(t) ? GetRemainingCost(t) : null, GetInitialCost(t));
+    }
+
+    private static string FormatResearchCosts((float? progress, float cost) tech)
+    {
+        if (tech.progress != null)
+        {
+            return $"{tech.progress:F0} / {tech.cost:F0}";
+        }
+        return $"{tech.cost:F0}";
+    }
+
+    private static string GetLargestContributionFromList(IEnumerable<(float, string)> contributions)
+    {
+        var best = contributions.Max();
+        return best.Item1 > 0.0f ? best.Item2 : "No one";
+    }
+
+    private static string GetLargestContributionForActiveTech(TITechTemplate t)
+    {
+        var globalResearch = GameStateManager.GlobalResearch();
+        for (int i = 0; i < 3; ++i)
+        {
+            var progress = globalResearch.GetTechProgress(i);
+            if (progress.techTemplate != t) continue;
+
+            return GetLargestContributionFromList(progress.factionContributions.Select(kvp => (kvp.Value, PlayerDisplayName(kvp.Key))));
+        }
+        return "No one";
+    }
+
+    private static string GetLargestContribution(TITechTemplate t)
+    {
+        if (InProgress(t)) return GetLargestContributionForActiveTech(t);
+        var contributions = GameStateManager.AllFactions().Select(f => (f.techContributionHistory.TryGetValue(t, out var c) ? c : 0.0f, PlayerDisplayName(f)));
+        return GetLargestContributionFromList(contributions);
+    }
+
+    private static IEnumerable<TIFactionState> FactionsWithProjectCompleted(TIProjectTemplate p)
+    {
+        return GameStateManager.AllFactions().Where(f => f.completedProjects.Contains(p));
+    }
+
+    private static string FormatFactionsList(IEnumerable<TIFactionState> fs)
+    {
+        return GameStateManager.AllHumanFactions().All(f => fs.Contains(f))
+            ? "Everyone"
+            : string.Join(", ", fs.Select(f => PlayerDisplayName(f)));
+    }
+
+    private static string GetProjectDisplayName(TIProjectTemplate p)
+    {
+        if (p.factionPrereq.Count() == 0) return p.displayName;
+
+        return $"{p.displayName} (" + string.Join(", ", p.factionPrereq) + ")";
+    }
 
     public static ObjectSchema<TIFactionState> FactionResources = new ObjectSchema<TIFactionState>()
         .AddField("Faction", f => $@"{PlayerDisplayName(f)}{(f == GameControl.control.activePlayer ? " (player)" : "")}")
@@ -365,5 +530,20 @@ public static class Schemas
         .AddField("MC Usage", t => t.hullTemplate.missionControl)
         .AddField("Money Upkeep", t => t.GetMonthlyExpenses(FactionResource.Money), FormatSmallNumber)
         .AddField("Build Time", t => t.hullTemplate.noShipyardConstructionTime_Days(t.designingFaction), v => $"{v:N0} days")
+    ;
+
+    public static ObjectSchema<TITechTemplate> GlobalTechs = new ObjectSchema<TITechTemplate>()
+        .AddField("Name", t => t.displayName)
+        .AddField("Status", GetTechStatus)
+        .AddField("Cost", GetResearchCosts, FormatResearchCosts)
+        .AddField("Remaining Tree Cost", GetRemainingTreeCost, FormatBigNumber)
+        .AddField("Largest Contribution", GetLargestContribution)
+    ;
+    public static ObjectSchema<TIProjectTemplate> FactionProjects = new ObjectSchema<TIProjectTemplate>()
+        .AddField("Name", GetProjectDisplayName)
+        .AddField("Status", GetProjectStatus)
+        .AddField("Cost", GetResearchCosts, FormatResearchCosts)
+        .AddField("Remaining Tree Cost", GetRemainingTreeCost, FormatBigNumber)
+        .AddField("Completed By", FactionsWithProjectCompleted, FormatFactionsList)
     ;
 };

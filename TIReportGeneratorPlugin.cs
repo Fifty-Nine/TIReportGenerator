@@ -10,6 +10,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.CodeDom.Compiler;
 using PavonisInteractive.TerraInvicta.Systems;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace TIReportGenerator
 {
@@ -53,7 +54,7 @@ namespace TIReportGenerator
                 GenerateReport(GenerateHabsAndStationsReport, "habs_and_stations", reportPath);
                 GenerateReport(GenerateFleetReport, "fleets", reportPath);
                 GenerateReport(GenerateShipTemplateReport, "ship_templates", reportPath);
-
+                GenerateReport(GenerateTechReport, "technology", reportPath);
                 /* todo:
                      - councilors/orgs
                      - tech tree
@@ -174,6 +175,34 @@ namespace TIReportGenerator
                 }
                 writer.WriteLine();
             }
+        }
+
+        private static bool IsAlienOnlyProject(TIProjectTemplate p)
+        {
+            var aliens = GameStateManager.AlienFaction();
+
+            return p.factionPrereq.Count() == 1 && p.FactionPrereqsSatisfied(aliens) && !p.FactionPrereqsSatisfied(GameControl.control.activePlayer);
+        }
+
+        private static void GenerateTechReport(StreamWriter writer)
+        {
+            writer.WriteLine($"# Tech Report as of {TITimeState.Now()}");
+            writer.WriteLine("Status Legend:");
+            writer.WriteLine(" * Completed: You have finished this technology or project.");
+            writer.WriteLine(" * Active: This technology or project is being researched.");
+            writer.WriteLine(" * Available: Technology or project is ready to research.");
+            writer.WriteLine(" * Locked: Prerequisites met, but project not yet rolled/unlocked by your faction.");
+            writer.WriteLine(" * Blocked: Research prerequisites not met.");
+            writer.WriteLine("## Global Technologies");
+            var allTechs = TIGlobalResearchState.GetAllTechs().OrderBy(Schemas.GetTechStatus);
+            writer.WriteLine(Renderers.RenderMarkdownTable(allTechs, Schemas.GlobalTechs));
+            writer.WriteLine();
+            writer.WriteLine("## Player Faction Projects");
+            var filteredProjects = TIGlobalResearchState.GetAllProjects()
+                                                        .Where(p => !IsAlienOnlyProject(p))
+                                                        .OrderBy(Schemas.GetProjectStatus);
+            writer.WriteLine(Renderers.RenderMarkdownTable(filteredProjects, Schemas.FactionProjects));
+            writer.WriteLine();
         }
     }
 
