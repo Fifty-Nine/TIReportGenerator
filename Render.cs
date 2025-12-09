@@ -32,7 +32,11 @@ public static class Renderers
                 result.Append("## ");
                 first = false;
             }
-            result.AppendLine($"{field.Name}: {field.Render(obj)}");
+            var value = field.Render(obj);
+            if (value != "") {
+                result.Append($"{field.Name}: {value}");
+            }
+            result.AppendLine();
         }
 
         return result.ToString();

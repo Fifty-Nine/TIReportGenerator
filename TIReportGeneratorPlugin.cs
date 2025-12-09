@@ -56,8 +56,9 @@ namespace TIReportGenerator
                 GenerateReport(GenerateShipTemplateReport, "ship_templates", reportPath);
                 GenerateReport(GenerateTechReport, "technology", reportPath);
                 GenerateReport(GenerateProspectingReport, "prospecting", reportPath);
+                GenerateReport(GenerateOrgsReport, "orgs", reportPath);
                 /* todo:
-                     - councilors/orgs
+                     - councilors
                      - army deployments
                      - alien activity
                      */
@@ -163,14 +164,12 @@ namespace TIReportGenerator
                 writer.WriteLine("Full Refuel Cost:");
                 foreach (var kvp in Schemas.CollectRefuelCosts(template))
                 {
-                    if (kvp.Value < 0.05f && kvp.Value > -0.05f) continue;
                     writer.WriteLine($"  {TIUtilities.GetResourceString(kvp.Key)}: {TIUtilities.FormatSmallNumber(kvp.Value)}");
                 }
                 writer.WriteLine();
                 writer.WriteLine("Build Cost (includes initial propellant):");
                 foreach (var kvp in Schemas.CollectBuildCosts(template))
                 {
-                    if (kvp.Value < 0.05f && kvp.Value > -0.05f) continue;
                     writer.WriteLine($"  {TIUtilities.GetResourceString(kvp.Key)}: {TIUtilities.FormatSmallNumber(kvp.Value)}");
                 }
                 writer.WriteLine();
@@ -213,6 +212,17 @@ namespace TIReportGenerator
                                                     .Where(body => body.habSites.Any())
                                                     .SelectMany(b => b.habSites.Cast<TISpaceGameState>().Prepend(b));
             writer.WriteLine(Renderers.RenderMarkdownTable(allBodiesAndSites, Schemas.HabSitesAndBodies));
+        }
+
+        private static void GenerateOrgsReport(StreamWriter writer)
+        {
+            writer.WriteLine($"# Orgs Report as of {TITimeState.Now()}");
+
+            var allOrgs = GameStateManager.IterateByClass<TIOrgState>()
+                                          .Where(org => org.factionOrbit != null);
+            foreach (var org in allOrgs) {
+                writer.WriteLine(Renderers.RenderMarkdownDescription(org, Schemas.Orgs));
+            }
         }
     }
 
