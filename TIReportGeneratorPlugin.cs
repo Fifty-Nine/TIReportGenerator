@@ -57,9 +57,9 @@ namespace TIReportGenerator
                 GenerateReport(GenerateTechReport, "technology", reportPath);
                 GenerateReport(GenerateProspectingReport, "prospecting", reportPath);
                 GenerateReport(GenerateOrgsReport, "orgs", reportPath);
+                GenerateReport(GenerateArmyReport, "armies", reportPath);
                 /* todo:
                      - councilors
-                     - army deployments
                      - alien activity
                      */
             }
@@ -223,6 +223,16 @@ namespace TIReportGenerator
             foreach (var org in allOrgs) {
                 writer.WriteLine(Renderers.RenderMarkdownDescription(org, Schemas.Orgs));
             }
+        }
+
+        private static void GenerateArmyReport(StreamWriter writer)
+        {
+            writer.WriteLine($"# World Armies Report as of {TITimeState.Now()}");
+
+            var armies = GameStateManager.IterateByClass<TIArmyState>()
+                                         .Where(a => !a.destroyed);
+
+            writer.WriteLine(Renderers.RenderMarkdownTable(armies, Schemas.Armies));
         }
     }
 

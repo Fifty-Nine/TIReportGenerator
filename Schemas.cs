@@ -750,4 +750,29 @@ public static class Schemas
         .AddField("Tech Bonus", org => org.techBonuses, FormatTechBonuses)
         .AddField("Bonuses", GetOtherOrgBonuses)
     ;
+
+    private static string GetArmyStatus(TIArmyState army)
+    {
+        if (army.currentOperations == null || army.currentOperations.Count == 0)
+        {
+            return "Idle";
+        }
+
+        var op = army.currentOperations.First();
+        var desc = op.operation.GetDisplayName();
+        if (op.target != null) desc += $" -> {PlayerDisplayName(op.target)}";
+        if (op.completionDate != null) desc += $" (ETA: {op.completionDate.ToCustomDateString()})";
+        return desc;
+    }
+
+    public static ObjectSchema<TIArmyState> Armies = new ObjectSchema<TIArmyState>()
+        .AddField("Name", a => PlayerDisplayName(a))
+        .AddField("Faction", a => PlayerDisplayName(a.faction))
+        .AddField("Nation", a => PlayerDisplayName(a.homeNation))
+        .AddField("Location", a => PlayerDisplayName(a.currentRegion))
+        .AddField("Tech", a => a.techLevel, "F2")
+        .AddField("Strength", a => a.strength, "P0")
+        .AddField("Navy", a => a.deploymentType == DeploymentType.Naval, FormatBool)
+        .AddField("Status", GetArmyStatus)
+    ;
 };
