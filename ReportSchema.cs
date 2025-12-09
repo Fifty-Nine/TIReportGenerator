@@ -59,4 +59,31 @@ public class ObjectSchema<T>
         Fields.Add(new ReportField<T, U>(header, accessor, o => string.Format("{0:" + format + "}", o)));
         return this;
     }
+
+    public static ObjectSchema<T> mergeDerivedObjects<U, V>(ObjectSchema<U> l, ObjectSchema<V> r)
+        where U : T
+        where V : T
+    {
+        var result = new ObjectSchema<T>();
+
+        var allFields = l.Fields.Select(f => f.Name).Union(r.Fields.Select(f => f.Name));
+
+        foreach (var field in allFields)
+        {
+            var lField = l.Fields.Find(f => f.Name == field);
+            var rField = r.Fields.Find(f => f.Name == field);
+
+            result.AddField(
+                field,
+                obj => obj switch
+                {
+                    U u => lField != null ? lField.Render(u) : "",
+                    V v => rField != null ? rField.Render(v) : "",
+                    _ => ""
+                }
+            );
+        }
+
+        return result;
+    }
 }

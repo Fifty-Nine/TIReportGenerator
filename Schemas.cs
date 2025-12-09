@@ -376,6 +376,38 @@ public static class Schemas
         return $"{p.displayName} (" + string.Join(", ", p.factionPrereq) + ")";
     }
 
+    private enum HabSiteStatus
+    {
+        Occupied,
+        Unprospected,
+        Available
+    };
+
+    private static bool IsProspectedByPlayer(TIHabSiteState site)
+    {
+        return GameControl.control.activePlayer.Prospected(site);
+    }
+
+    private static (HabSiteStatus, string) GetHabSiteStatus(TIHabSiteState site)
+    {
+        return site.hasPlannedOrOperatingBase ? (HabSiteStatus.Occupied, PlayerDisplayName(site.hab.faction)) :
+                   IsProspectedByPlayer(site) ? (HabSiteStatus.Available, null) :
+                                                (HabSiteStatus.Unprospected, null);
+    }
+
+    private static string FormatHabSiteStatus((HabSiteStatus status, string owner) site)
+    {
+        return site.status == HabSiteStatus.Occupied  ? $"Occupied ({site.owner})" :
+               site.status == HabSiteStatus.Available ? "Available" :
+                                                        "Not Prospected";
+    }
+
+    private static Func<TIHabSiteState, string> GetResourceGrade(FactionResource resource)
+    {
+        return site => IsProspectedByPlayer(site) ? $"{site.GetMonthlyProduction(resource):F1} ({site.GetActualResourceGrade(resource).ToString()})"
+                                                  : site.GetExpectedResourceGrade(resource).ToString();
+    }
+
     public static ObjectSchema<TIFactionState> FactionResources = new ObjectSchema<TIFactionState>()
         .AddField("Faction", f => $@"{PlayerDisplayName(f)}{(f == GameControl.control.activePlayer ? " (player)" : "")}")
         .AddField("Money", GetResourceValues(FactionResource.Money), FormatResourceIncome)
@@ -546,4 +578,21 @@ public static class Schemas
         .AddField("Remaining Tree Cost", GetRemainingTreeCost, FormatBigNumber)
         .AddField("Completed By", FactionsWithProjectCompleted, FormatFactionsList)
     ;
+
+    public static ObjectSchema<TIHabSiteState> HabSites = new ObjectSchema<TIHabSiteState>()
+        .AddField("Name", site => PlayerDisplayName(site))
+        .AddField("Status", GetHabSiteStatus, FormatHabSiteStatus)
+        .AddField("Water", GetResourceGrade(FactionResource.Water))
+        .AddField("Volatiles", GetResourceGrade(FactionResource.Volatiles))
+        .AddField("Metals", GetResourceGrade(FactionResource.Metals))
+        .AddField("Noble Metals", GetResourceGrade(FactionResource.NobleMetals))
+        .AddField("Fissiles", GetResourceGrade(FactionResource.Fissiles))
+    ;
+
+    public static ObjectSchema<TISpaceBodyState> Bodies = new ObjectSchema<TISpaceBodyState>()
+        .AddField("Name", body => $"**{PlayerDisplayName(body)}**")
+    ;
+
+    public static ObjectSchema<TISpaceGameState> HabSitesAndBodies =
+        ObjectSchema<TISpaceGameState>.mergeDerivedObjects(HabSites, Bodies);
 };

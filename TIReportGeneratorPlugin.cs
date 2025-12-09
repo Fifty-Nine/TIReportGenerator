@@ -55,9 +55,9 @@ namespace TIReportGenerator
                 GenerateReport(GenerateFleetReport, "fleets", reportPath);
                 GenerateReport(GenerateShipTemplateReport, "ship_templates", reportPath);
                 GenerateReport(GenerateTechReport, "technology", reportPath);
+                GenerateReport(GenerateProspectingReport, "prospecting", reportPath);
                 /* todo:
                      - councilors/orgs
-                     - tech tree
                      - army deployments
                      - alien activity
                      */
@@ -203,6 +203,16 @@ namespace TIReportGenerator
                                                         .OrderBy(Schemas.GetProjectStatus);
             writer.WriteLine(Renderers.RenderMarkdownTable(filteredProjects, Schemas.FactionProjects));
             writer.WriteLine();
+        }
+
+        private static void GenerateProspectingReport(StreamWriter writer)
+        {
+            writer.WriteLine($"# Prospect Hab Site Report as of {TITimeState.Now()}");
+
+            var allBodiesAndSites = GameStateManager.AllSpaceBodies()
+                                                    .Where(body => body.habSites.Any())
+                                                    .SelectMany(b => b.habSites.Cast<TISpaceGameState>().Prepend(b));
+            writer.WriteLine(Renderers.RenderMarkdownTable(allBodiesAndSites, Schemas.HabSitesAndBodies));
         }
     }
 
