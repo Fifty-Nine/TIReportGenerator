@@ -557,6 +557,20 @@ public static class Schemas
         return FormatList(list);
     }
 
+    public static string GetCouncilorLocation(TICouncilorState councilor)
+    {
+        return GameControl.control.activePlayer.HasIntelOnCouncilorLocation(councilor) ?
+            PlayerDisplayName(councilor.location) :
+            "Unknown";
+    }
+
+    public static string GetCouncilorMission(TICouncilorState councilor)
+    {
+        return GameControl.control.activePlayer.HasIntelOnCouncilorMission(councilor) ?
+            councilor.activeMission?.missionTemplate?.displayName ?? "None" :
+            "Unknown";
+    }
+
     public static ObjectSchema<TIFactionState> FactionResources = new ObjectSchema<TIFactionState>()
         .AddField("Faction", f => $@"{PlayerDisplayName(f)}{(f == GameControl.control.activePlayer ? " (player)" : "")}")
         .AddField("Money", GetResourceValues(FactionResource.Money), FormatResourceIncome)
@@ -792,6 +806,18 @@ public static class Schemas
         .AddField("Other Faction", r => PlayerDisplayName(r.To))
         .AddField("War", r => r.AtWar, FormatBool)
         .AddField("Opinion", r => r.Relationship)
-        .AddField("Treaties", r => r.Treaties, FormatTrivialList)
+        .AddField("Treaties", r => r.Treaties, treaties => FormatList(treaties, FactionRelation.TreatyName))
+    ;
+
+    public static ObjectSchema<TIRegionXenoformingState> XenoformingSite = new ObjectSchema<TIRegionXenoformingState>()
+        .AddField("Region", x => PlayerDisplayName(x.region))
+        .AddField("Nation", x => PlayerDisplayName(x.region.nation))
+        .AddField("Severity", x => x.severityDescription)
+    ;
+
+    public static ObjectSchema<TICouncilorState> XenoCouncilor = new ObjectSchema<TICouncilorState>()
+        .AddField("Name", x => PlayerDisplayName(x))
+        .AddField("Location", GetCouncilorLocation)
+        .AddField("Mission", GetCouncilorMission)
     ;
 };

@@ -54,6 +54,11 @@ public class FactionRelation
         );
     }
 
+    public static InformalRelationType CategorizeHateValue(float hate)
+    {
+        return Enum.GetValues(typeof(InformalRelationType)).Cast<InformalRelationType>().OrderByDescending(v => (float)v).First(v => hate > (float)v);
+    }
+
     public FactionRelation(TIFactionState from, TIFactionState to)
     {
         From = from;
@@ -67,7 +72,7 @@ public class FactionRelation
         }
         else
         {
-            Relationship = Enum.GetValues(typeof(InformalRelationType)).Cast<InformalRelationType>().OrderByDescending(v => (float)v).First(v => hate > (float)v);
+            Relationship = CategorizeHateValue(hate);
             AtWar = from.AI_AtWarWithFaction(to);
         }
 

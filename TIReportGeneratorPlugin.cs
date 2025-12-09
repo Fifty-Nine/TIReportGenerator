@@ -53,9 +53,9 @@ namespace TIReportGenerator
                 GenerateReport(GenerateOrgsReport, "orgs", reportPath);
                 GenerateReport(GenerateArmyReport, "armies", reportPath);
                 GenerateReport(GenerateFactionRelationsReport, "relations", reportPath);
+                GenerateReport(GenerateAlienActivityReport, "alien_activity", reportPath);
                 /* todo:
                      - councilors
-                     - alien activity
                      */
             }
         }
@@ -236,6 +236,21 @@ namespace TIReportGenerator
             var relations = FactionRelation.BuildRelationsList(GameStateManager.AllHumanFactions());
 
             writer.WriteLine(Renderers.RenderMarkdownTable(relations, Schemas.FactionRelations));
+        }
+        private static void GenerateAlienActivityReport(StreamWriter writer)
+        {
+            writer.WriteLine($"# Alien Activity Report as of {TITimeState.Now()}");
+            var player = GameControl.control.activePlayer;
+            var hate = player.GetEstimatedAlienHate();
+            var warThreshold = TIGlobalConfig.globalConfig.factionHateWarThreshold;
+            writer.WriteLine($"Estimated Alien Hate: {FactionRelation.CategorizeHateValue(hate)} ({hate:F0})");
+            writer.WriteLine($"Note: Hate level above {warThreshold:F0} implies war footing, {warThreshold*4:F0} implies total war.");
+            writer.WriteLine($"Hate last established on: {player.GetLastDateofFixedAlienHate().ToCustomTimeDateString()}");
+            writer.WriteLine();
+            writer.WriteLine("Known Alien councilors (if any):");
+            writer.WriteLine(Renderers.RenderMarkdownTable(player.knownSpies.Where(spy => spy.faction == GameStateManager.AlienFaction()), Schemas.XenoCouncilor));
+            writer.WriteLine("Known Xenoforming (if any):");
+            writer.WriteLine(Renderers.RenderMarkdownTable(player.KnownXenoforming, Schemas.XenoformingSite));
         }
     }
 
