@@ -54,9 +54,7 @@ namespace TIReportGenerator
                 GenerateReport(GenerateArmyReport, "armies", reportPath);
                 GenerateReport(GenerateFactionRelationsReport, "relations", reportPath);
                 GenerateReport(GenerateAlienActivityReport, "alien_activity", reportPath);
-                /* todo:
-                     - councilors
-                     */
+                GenerateReport(GenerateCouncilorReport, "councilors", reportPath);
             }
         }
 
@@ -251,6 +249,27 @@ namespace TIReportGenerator
             writer.WriteLine(Renderers.RenderMarkdownTable(player.knownSpies.Where(spy => spy.faction == GameStateManager.AlienFaction()), Schemas.XenoCouncilor));
             writer.WriteLine("Known Xenoforming (if any):");
             writer.WriteLine(Renderers.RenderMarkdownTable(player.KnownXenoforming, Schemas.XenoformingSite));
+        }
+
+        private static void GenerateCouncilorReport(StreamWriter writer)
+        {
+            writer.WriteLine($"# Councilor Report as of {TITimeState.Now()}");
+
+            var councilors = GameStateManager.IterateByClass<TICouncilorState>()
+                                             .Where(c => c.faction != null &&
+                                                         c.faction != GameStateManager.AlienFaction());
+
+            foreach (var c in councilors)
+            {
+                writer.WriteLine(Renderers.RenderMarkdownDescription(c, Schemas.Councilor));
+                writer.WriteLine(Renderers.RenderMarkdownTable(
+                    Schemas.AllCouncilorAttributes().Where(a => a != CouncilorAttribute.Loyalty)
+                                                    .Select(a => (a, Schemas.ComputeCouncilorStatValues(c, a))),
+                    Schemas.CouncilorStats)
+                );
+                writer.WriteLine("Traits:");
+                writer.WriteLine(Renderers.RenderMarkdownList(c.traits, Schemas.Trait));
+            }
         }
     }
 

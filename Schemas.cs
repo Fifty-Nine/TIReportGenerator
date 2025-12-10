@@ -180,11 +180,23 @@ public static class Schemas
         return $"{armor.name} ({armor.value} pts / {FormatSmallNumberWithPrefix(armor.thickness)}m)";
     }
 
+    public static IEnumerable<FactionResource> AllFactionResources()
+    {
+        return Enum.GetValues(typeof(FactionResource))
+                   .Cast<FactionResource>()
+                   .Where(v => v != FactionResource.None);
+    }
+
+    public static IEnumerable<CouncilorAttribute> AllCouncilorAttributes()
+    {
+        return Enum.GetValues(typeof(CouncilorAttribute))
+                   .Cast<CouncilorAttribute>()
+                   .Where(a => a != CouncilorAttribute.None);
+    }
+
     private static Dictionary<FactionResource, float> ResourceCostToDictionary(TIResourcesCost c)
     {
-        var values = Enum.GetValues(typeof(FactionResource))
-                         .Cast<FactionResource>()
-                         .Where(v => v != FactionResource.None)
+        var values = AllFactionResources()
                          .Select(v => (Resource: v, Cost: c.GetSingleCostValue(v)))
                          .Where(p => p.Cost >= 0.05f || p.Cost <= -0.05f)
         ;
@@ -453,15 +465,21 @@ public static class Schemas
         return result.Where(kvp => kvp.Item2 > 0.05f || kvp.Item2 < -0.05f)
                      .ToDictionary(kvp => kvp.Item1, kvp => kvp.Item2);
     }
+    private static Dictionary<FactionResource, float> GetCouncilorIncomes(TICouncilorState councilor)
+    {
+        return AllFactionResources().Select(r => (r, councilor.GetMonthlyIncome(r)))
+                                    .Where(rp => rp.Item2 > 0.05f || rp.Item2 < -0.05f)
+                                    .ToDictionary(rp => rp.Item1, rp => rp.Item2);
+    }
 
     private static string FormatMissions(IEnumerable<TIMissionTemplate> missions)
     {
         return FormatList(missions, mission => mission.displayName);
     }
 
-    private static string FormatOrgIncomes(Dictionary<FactionResource, float> incomes)
+    private static string FormatIncomes(Dictionary<FactionResource, float> incomes)
     {
-        return FormatList(incomes, kvp => $"{kvp.Value:+0;-0;} {TIUtilities.GetResourceString(kvp.Key)}");
+        return FormatList(incomes, kvp => $"{(kvp.Value > 0 ? "+" : "")}{FormatSmallNumber(kvp.Value)} {TIUtilities.GetResourceString(kvp.Key)}");
     }
 
     private static string FormatTechBonuses(IEnumerable<TechBonus> bonuses)
@@ -571,6 +589,35 @@ public static class Schemas
             "Unknown";
     }
 
+    public enum CouncilorStatElement
+    {
+        Total,
+        Base,
+        FromTraits,
+        FromOrgs,
+        Cap
+    };
+
+    public static Dictionary<CouncilorStatElement, float> ComputeCouncilorStatValues(TICouncilorState c, CouncilorAttribute attr)
+    {
+        var baseVal = c.attributes[attr];
+        var fromTraits = c.GetAttribute(attr, includeOrgs: false, includeAllUnconditionalTraits: true) - baseVal;
+        var total = c.GetAttribute(attr, includeOrgs: true, includeAllUnconditionalTraits: true);
+        var fromOrgs = total - fromTraits - baseVal;
+        List<(CouncilorStatElement, float)> result = [
+            (CouncilorStatElement.Total, total),
+            (CouncilorStatElement.Base, baseVal),
+            (CouncilorStatElement.FromTraits, fromTraits),
+            (CouncilorStatElement.FromOrgs, fromOrgs),
+            /*
+             * Traits like furtive impose a cap on apparent loyalty, but crucially, not *actual* loyalty.
+             * Since we don't display the actual loyalty, we return the cap on actual loyalty to avoid
+             * giving the impression that the actual loyalty cannot be raised.
+             */
+            (CouncilorStatElement.Cap, attr == CouncilorAttribute.ApparentLoyalty ? c.GetClampedMaxStatValue(CouncilorAttribute.Loyalty) : c.GetClampedMaxStatValue(attr))
+        ];
+        return result.ToDictionary(kvp => kvp.Item1, kvp => kvp.Item2);
+    }
     public static ObjectSchema<TIFactionState> FactionResources = new ObjectSchema<TIFactionState>()
         .AddField("Faction", f => $@"{PlayerDisplayName(f)}{(f == GameControl.control.activePlayer ? " (player)" : "")}")
         .AddField("Money", GetResourceValues(FactionResource.Money), FormatResourceIncome)
@@ -770,7 +817,7 @@ public static class Schemas
         .AddField("Trait Requirements", org => org.requiredOwnerTraits, FormatTraitRequirements)
         .AddField("Equip/Transfer Cost", org => org.GetPurchaseOrTransferCost(GameControl.control.activePlayer), FormatResourceCost)
         .AddField("Skills", GetOrgStatBonuses, FormatStatBonuses)
-        .AddField("Income", GetOrgIncomes, FormatOrgIncomes)
+        .AddField("Income", GetOrgIncomes, FormatIncomes)
         .AddField("Missions Granted", org => org.missionsGranted, FormatMissions)
         .AddField("Tech Bonus", org => org.techBonuses, FormatTechBonuses)
         .AddField("Bonuses", GetOtherOrgBonuses)
@@ -819,5 +866,31 @@ public static class Schemas
         .AddField("Name", x => PlayerDisplayName(x))
         .AddField("Location", GetCouncilorLocation)
         .AddField("Mission", GetCouncilorMission)
+    ;
+
+    public static ObjectSchema<(CouncilorAttribute, Dictionary<CouncilorStatElement, float>)> CouncilorStats = new ObjectSchema<(CouncilorAttribute, Dictionary<CouncilorStatElement, float>)>()
+        .AddField("Attribute", tup => TIUtilities.GetAttributeString(tup.Item1))
+        .AddField("Total", tup => tup.Item2[CouncilorStatElement.Total], "N0")
+        .AddField("Base", tup => tup.Item2[CouncilorStatElement.Base], "N0")
+        .AddField("From Traits", tup => tup.Item2[CouncilorStatElement.FromTraits], "N0")
+        .AddField("From Orgs", tup => tup.Item2[CouncilorStatElement.FromOrgs], "N0")
+        .AddField("Cap", tup => tup.Item2[CouncilorStatElement.Cap], "N0")
+    ;
+
+    public static ObjectSchema<TICouncilorState> Councilor = new ObjectSchema<TICouncilorState>()
+         /* fixme: This should probably be more respectful of fog-of-war constraints, along with orgs. */
+        .AddField("Name", c => c.displayName)
+        .AddField("Faction", c => c.faction, f => PlayerDisplayName(f))
+        .AddField("Background", c => c.jobDisplayName)
+        .AddField("Age", c => c.age, "N0")
+        .AddField("XP", c => c.XP, "N0")
+        .AddField("Location", c => PlayerDisplayName(c.location))
+        .AddField("Home Region", c => PlayerDisplayName(c.homeRegion))
+        .AddField("Current Mission", c => c.activeMission?.missionTemplate.displayName ?? "None")
+        .AddField("Income", GetCouncilorIncomes, FormatIncomes)
+    ;
+
+    public static ObjectSchema<TITraitTemplate> Trait = new ObjectSchema<TITraitTemplate>()
+        .AddField("Name", tt => tt.displayName)
     ;
 };
