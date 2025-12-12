@@ -19,6 +19,7 @@ namespace TIReportGenerator
 
             Harmony.CreateAndPatchAll(typeof(GameControlPatch));
             Harmony.CreateAndPatchAll(typeof(LoadMenuControllerPatch));
+            Harmony.CreateAndPatchAll(typeof(GameStateManagerPatch));
         }
     }
 
@@ -39,23 +40,29 @@ namespace TIReportGenerator
         public static void CompleteInitPostfix()
         {
             TIReportGeneratorPlugin.Log.LogInfo("GameControl initialization complete.");
-            if (saveName != null) {
-                var savePath = TIUtilities.GetSaveFilePath(saveName);
-                var reportPath = Path.Combine(Path.GetDirectoryName(savePath), $"report_{saveName}");
-                Directory.CreateDirectory(reportPath.ToString());
-                GenerateReport(GenerateResourceReport, "faction_resources", reportPath);
-                GenerateReport(GenerateNationsReport, "nations", reportPath);
-                GenerateReport(GenerateHabsAndStationsReport, "habs_and_stations", reportPath);
-                GenerateReport(GenerateFleetReport, "fleets", reportPath);
-                GenerateReport(GenerateShipTemplateReport, "ship_templates", reportPath);
-                GenerateReport(GenerateTechReport, "technology", reportPath);
-                GenerateReport(GenerateProspectingReport, "prospecting", reportPath);
-                GenerateReport(GenerateOrgsReport, "orgs", reportPath);
-                GenerateReport(GenerateArmyReport, "armies", reportPath);
-                GenerateReport(GenerateFactionRelationsReport, "relations", reportPath);
-                GenerateReport(GenerateAlienActivityReport, "alien_activity", reportPath);
-                GenerateReport(GenerateCouncilorReport, "councilors", reportPath);
+            GenerateReports();
+        }
+
+        public static void GenerateReports()
+        {
+            if (saveName == null) {
+                return;
             }
+            var savePath = TIUtilities.GetSaveFilePath(saveName);
+            var reportPath = Path.Combine(Path.GetDirectoryName(savePath), $"report_{saveName}");
+            Directory.CreateDirectory(reportPath.ToString());
+            GenerateReport(GenerateResourceReport, "faction_resources", reportPath);
+            GenerateReport(GenerateNationsReport, "nations", reportPath);
+            GenerateReport(GenerateHabsAndStationsReport, "habs_and_stations", reportPath);
+            GenerateReport(GenerateFleetReport, "fleets", reportPath);
+            GenerateReport(GenerateShipTemplateReport, "ship_templates", reportPath);
+            GenerateReport(GenerateTechReport, "technology", reportPath);
+            GenerateReport(GenerateProspectingReport, "prospecting", reportPath);
+            GenerateReport(GenerateOrgsReport, "orgs", reportPath);
+            GenerateReport(GenerateArmyReport, "armies", reportPath);
+            GenerateReport(GenerateFactionRelationsReport, "relations", reportPath);
+            GenerateReport(GenerateAlienActivityReport, "alien_activity", reportPath);
+            GenerateReport(GenerateCouncilorReport, "councilors", reportPath);
         }
 
         private static string GetReportPath(string name, string dir)
@@ -283,6 +290,21 @@ namespace TIReportGenerator
             var name = __instance.saveList.selectedButton.saveInfo.name;
             TIReportGeneratorPlugin.Log.LogInfo($"Save name set to {name}");
             GameControlPatch.saveName = name;
+        }
+    }
+
+    [HarmonyPatch(typeof(GameStateManager))]
+    public static class GameStateManagerPatch
+    {
+        [HarmonyPatch(nameof(GameStateManager.SaveAllGameStates), new Type[] { typeof(string), typeof(bool) })]
+        [HarmonyPostfix]
+        public static void SaveAllGameStates(string __0)
+        {
+            var filepath = __0;
+            var name = Path.GetFileNameWithoutExtension(filepath);
+            TIReportGeneratorPlugin.Log.LogInfo($"Save name set to {name}");
+            GameControlPatch.saveName = name;
+            GameControlPatch.GenerateReports();
         }
     }
 }

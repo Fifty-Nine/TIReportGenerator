@@ -732,6 +732,7 @@ public static class Schemas
 
     public static ObjectSchema<TISpaceFleetState> Fleets = new ObjectSchema<TISpaceFleetState>()
         .AddField("Name", f => PlayerDisplayName(f))
+        .AddField("Faction", f => PlayerDisplayName(f.faction))
         .AddField("Location", f => f.GetLocationDescription(GameControl.control.activePlayer, capitalize: true, expand: false))
         .AddField("Status", GetFleetStatus)
         .AddField("Combat Power", f => f.SpaceCombatValue(), "N0")
