@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using MonoMod.Utils;
 
 namespace TIReportGenerator
 {
@@ -40,7 +41,21 @@ namespace TIReportGenerator
         public static void CompleteInitPostfix()
         {
             TIReportGeneratorPlugin.Log.LogInfo("GameControl initialization complete.");
-            GenerateReports();
+            GenerateReportsSafe();
+        }
+
+        public static void GenerateReportsSafe()
+        {
+            try
+            {
+                GenerateReports();
+            }
+            catch (Exception e)
+            {
+                TIReportGeneratorPlugin.Log.LogError(e.ToString());
+                TIReportGeneratorPlugin.Log.LogError(e.StackTrace);
+                e.LogDetailed();
+            }
         }
 
         public static void GenerateReports()
