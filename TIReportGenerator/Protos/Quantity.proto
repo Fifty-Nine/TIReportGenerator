@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+enum Unit {
+    Meter = 0;
+    Gram = 1;
+    MetersPerSecond = 2;
+    Watt = 3;
+    Joule = 4;
+    Ton = 5;
+    DegPerSecondSquared = 6;
+    Gee = 7;
+    Day = 8;
+}
+
+message Quantity {
+    float value = 1;
+    Unit units = 2;
+}

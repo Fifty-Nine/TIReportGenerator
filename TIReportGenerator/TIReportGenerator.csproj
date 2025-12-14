@@ -13,7 +13,13 @@
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
     <PackageReference Include="BepInEx.Core" Version="5.*" />
     <PackageReference Include="BetterConsoleTables" Version="1.1.3" />
+    <PackageReference Include="Google.Protobuf" Version="3.33.2" />
     <PackageReference Include="HarmonyX" Version="2.7.0" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Generated/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,5 +36,13 @@
       <HintPath>../../Terra Invicta/TerraInvicta_Data/Managed/UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <Target Name="CompileProtobuf" BeforeTargets="PrepareForBuild">
+    <MakeDir Directories="Generated" />
+    <Exec Command="protoc --csharp_out=Generated --proto_path=Protos Protos/*.proto" />
+    <ItemGroup>
+      <Compile Include="Generated/**/*.cs" />
+    </ItemGroup>
+  </Target>
 
 </Project>

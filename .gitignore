@@ -1,5 +1,6 @@
 bin/
 obj/
+TIReportGenerator/Generated/
 .vs/
 .idea/
 *.user

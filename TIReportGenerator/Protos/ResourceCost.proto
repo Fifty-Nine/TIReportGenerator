@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+message ResourceCost
+{
+    map<string, float> costs = 1;
+}

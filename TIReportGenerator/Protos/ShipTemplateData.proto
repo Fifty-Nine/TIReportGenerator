@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+import "Quantity.proto";
+import "ResourceCost.proto";
+import "ModuleList.proto";
+
+message ShipTemplateData {
+  string name = 1;
+  string faction_name = 2;
+  string ship_class = 3;
+  string role = 4;
+  string hull_name = 5;
+  
+  MassStats mass = 6;
+  int32 crew = 7;
+  AccelerationStats acceleration = 8;
+ 
+  Quantity cruise_delta_v = 9; 
+  Quantity turn_rate = 10;
+  
+  string drive_name = 11;
+  string power_plant_name = 12;
+  Quantity power_usage = 13;
+  string radiator_name = 14;
+  
+  Quantity battery_capacity = 16;
+  
+  ArmorStats nose_armor = 17;
+  ArmorStats lateral_armor = 18;
+  ArmorStats tail_armor = 19;
+  
+  float mc_usage = 20;
+  float money_upkeep = 21;
+  Quantity build_time_days = 22;
+  
+  ModuleList nose_weapons = 23;
+  ModuleList hull_weapons = 24;
+  ModuleList utility_modules = 25;
+  
+  ResourceCost refuel_cost = 26;
+  ResourceCost build_cost = 27;
+}
+
+message MassStats {
+  Quantity wet = 1;
+  Quantity dry = 2;
+}
+
+message AccelerationStats {
+  Quantity combat = 1;
+  Quantity cruise = 2;
+}
+
+message ArmorStats {
+    string type = 1;
+    int32 value = 2;
+    Quantity thickness = 3;
+}

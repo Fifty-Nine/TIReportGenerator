@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using MonoMod.Utils;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace TIReportGenerator
 {
@@ -43,6 +45,13 @@ namespace TIReportGenerator
             TIReportGeneratorPlugin.Log.LogInfo("GameControl initialization complete.");
             GenerateReportsSafe();
         }
+
+        public static readonly ISerializer YamlSerializer = new SerializerBuilder()
+            .WithNamingConvention(PascalCaseNamingConvention.Instance)
+            .DisableAliases()
+            .WithTypeConverter(new Util.QuantityConverter())
+            .WithTypeConverter(new Util.ModuleListConverter())
+            .Build();
 
         public static void GenerateReportsSafe()
         {
@@ -165,30 +174,11 @@ namespace TIReportGenerator
         {
             writer.WriteLine($"# Ship Templates Report as of {TITimeState.Now()}");
 
-            var allTemplates = GameStateManager.IterateByClass<TIFactionState>().SelectMany(f => f.shipDesigns);
+            var allTemplates = GameStateManager.IterateByClass<TIFactionState>()
+                                               .SelectMany(f => f.shipDesigns)
+                                               .Select(Extractors.ShipTemplateExtractor.FromGameState);
 
-            foreach (var template in allTemplates)
-            {
-                writer.WriteLine(Renderers.RenderMarkdownDescription(template, Schemas.ShipTemplate));
-                writer.WriteLine("Nose Weapons:");
-                writer.WriteLine(Renderers.RenderMarkdownList(template.noseWeapons, Schemas.ShipWeapon));
-                writer.WriteLine("Hull Weapons:");
-                writer.WriteLine(Renderers.RenderMarkdownList(template.hullWeapons, Schemas.ShipWeapon));
-                writer.WriteLine("Utility modules:");
-                writer.WriteLine(Renderers.RenderMarkdownList(template.utilityModules, Schemas.ShipUtilityModule));
-                writer.WriteLine("Full Refuel Cost:");
-                foreach (var kvp in Schemas.CollectRefuelCosts(template))
-                {
-                    writer.WriteLine($"  {TIUtilities.GetResourceString(kvp.Key)}: {TIUtilities.FormatSmallNumber(kvp.Value)}");
-                }
-                writer.WriteLine();
-                writer.WriteLine("Build Cost (includes initial propellant):");
-                foreach (var kvp in Schemas.CollectBuildCosts(template))
-                {
-                    writer.WriteLine($"  {TIUtilities.GetResourceString(kvp.Key)}: {TIUtilities.FormatSmallNumber(kvp.Value)}");
-                }
-                writer.WriteLine();
-            }
+            writer.WriteLine(YamlSerializer.Serialize(allTemplates));
         }
 
         private static bool IsAlienOnlyProject(TIProjectTemplate p)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using PavonisInteractive.TerraInvicta;
 
+namespace TIReportGenerator {
 public static class Schemas
 {
     private static string FormatResourceIncome((float stockpile, float income) values)
@@ -180,13 +181,6 @@ public static class Schemas
         return $"{armor.name} ({armor.value} pts / {FormatSmallNumberWithPrefix(armor.thickness)}m)";
     }
 
-    public static IEnumerable<FactionResource> AllFactionResources()
-    {
-        return Enum.GetValues(typeof(FactionResource))
-                   .Cast<FactionResource>()
-                   .Where(v => v != FactionResource.None);
-    }
-
     public static IEnumerable<CouncilorAttribute> AllCouncilorAttributes()
     {
         return Enum.GetValues(typeof(CouncilorAttribute))
@@ -194,35 +188,9 @@ public static class Schemas
                    .Where(a => a != CouncilorAttribute.None);
     }
 
-    private static Dictionary<FactionResource, float> ResourceCostToDictionary(TIResourcesCost c)
-    {
-        var values = AllFactionResources()
-                         .Select(v => (Resource: v, Cost: c.GetSingleCostValue(v)))
-                         .Where(p => p.Cost >= 0.05f || p.Cost <= -0.05f)
-        ;
-        return values.ToDictionary(
-            p => p.Resource,
-            p => p.Cost
-        );
-    }
-
-    public static Dictionary<FactionResource, float> CollectBuildCosts(TISpaceShipTemplate t)
-    {
-        return ResourceCostToDictionary(
-            t.spaceResourceConstructionCost(forceUpdateToCache: false, shipyard: null)
-        );
-    }
-
-    public static Dictionary<FactionResource, float> CollectRefuelCosts(TISpaceShipTemplate t)
-    {
-        return ResourceCostToDictionary(
-            t.propellantTanksBuildCost(faction: null)
-        );
-    }
-
     public static string FormatResourceCost(TIResourcesCost c)
     {
-        return FormatList(ResourceCostToDictionary(c), kvp => $"{TIUtilities.FormatSmallNumber(kvp.Value)} {TIUtilities.GetResourceString(kvp.Key)}");
+        return FormatList(Extractors.ResourceCostExtractor.ResourceCostToDictionary(c), kvp => $"{TIUtilities.FormatSmallNumber(kvp.Value)} {TIUtilities.GetResourceString(kvp.Key)}");
     }
     private static bool InProgress(TIGenericTechTemplate t)
     {
@@ -467,7 +435,7 @@ public static class Schemas
     }
     private static Dictionary<FactionResource, float> GetCouncilorIncomes(TICouncilorState councilor)
     {
-        return AllFactionResources().Select(r => (r, councilor.GetMonthlyIncome(r)))
+        return Extractors.ResourceCostExtractor.AllFactionResources().Select(r => (r, councilor.GetMonthlyIncome(r)))
                                     .Where(rp => rp.Item2 > 0.05f || rp.Item2 < -0.05f)
                                     .ToDictionary(rp => rp.Item1, rp => rp.Item2);
     }
@@ -568,11 +536,6 @@ public static class Schemas
     {
         formatter ??= o => o.ToString();
         return string.Join(", ", list.Select(formatter));
-    }
-
-    public static string FormatTrivialList<T>(IEnumerable<T> list)
-    {
-        return FormatList(list);
     }
 
     public static string GetCouncilorLocation(TICouncilorState councilor)
@@ -750,31 +713,6 @@ public static class Schemas
         .AddField("Name", t => t.moduleTemplate.displayName)
     ;
 
-    public static ObjectSchema<TISpaceShipTemplate> ShipTemplate = new ObjectSchema<TISpaceShipTemplate>()
-        .AddField("Name", t => t.displayName)
-        .AddField("Faction", t => t.designingFaction, f => PlayerDisplayName(f))
-        .AddField("Class", t => t.fullClassName)
-        .AddField("Role", t => t.roleStr)
-        .AddField("Hull", t => t.hullTemplate.displayName)
-        .AddField("Mass", GetShipTemplateMasses, FormatShipMasses)
-        .AddField("Crew", t => t.crewBillets)
-        .AddField("Acceleration (Combat/Cruise)", GetShipTemplateAccel, FormatShipAccel)
-        .AddField("Delta-V", t => t.baseCruiseDeltaV_kps(forceUpdate: false), v => $"{v:F1} kps")
-        .AddField("Turn Rate", t => t.baseAngularAcceleration_degs2, v => $"{v:F1} deg/s²")
-        .AddField("Drive", t => t.driveTemplate?.displayName ?? "none")
-        .AddField("Power Plant", t => t.powerPlantTemplate?.displayName ?? "none")
-        .AddField("Power Usage", t => t.shipPowerProductionRequirement_GW, v => $"{FormatSmallNumber(v)} GW")
-        .AddField("Radiator", t => t.radiatorTemplate?.displayName ?? "none")
-        .AddField("Batteries", t => t.batteryTemplates, FormatBatteryList)
-        .AddField("Battery Capacity", t => t.BatteryCapacity_GJ(), v => $"{FormatSmallNumber(v)} GJ")
-        .AddField("Nose Armor", GetShipTemplateNoseArmor, FormatArmorValues)
-        .AddField("Lateral Armor", GetShipTemplateLateralArmor, FormatArmorValues)
-        .AddField("Tail Armor", GetShipTemplateTailArmor, FormatArmorValues)
-        .AddField("MC Usage", t => t.hullTemplate.missionControl)
-        .AddField("Money Upkeep", t => t.GetMonthlyExpenses(FactionResource.Money), FormatSmallNumber)
-        .AddField("Build Time", t => t.hullTemplate.noShipyardConstructionTime_Days(t.designingFaction), v => $"{v:N0} days")
-    ;
-
     public static ObjectSchema<TITechTemplate> GlobalTechs = new ObjectSchema<TITechTemplate>()
         .AddField("Name", t => t.displayName)
         .AddField("Status", GetTechStatus)
@@ -895,3 +833,4 @@ public static class Schemas
         .AddField("Name", tt => tt.displayName)
     ;
 };
+}
