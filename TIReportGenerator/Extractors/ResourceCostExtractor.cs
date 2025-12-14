@@ -6,14 +6,14 @@ using PavonisInteractive.TerraInvicta;
 namespace TIReportGenerator.Extractors
 {
     public static class ResourceCostExtractor
-    { 
+    {
         public static IEnumerable<FactionResource> AllFactionResources()
         {
             return Enum.GetValues(typeof(FactionResource))
                     .Cast<FactionResource>()
                     .Where(v => v != FactionResource.None);
         }
-        
+
         public static Dictionary<FactionResource, float> ResourceCostToDictionary(TIResourcesCost c)
         {
             var values = AllFactionResources()
@@ -25,7 +25,7 @@ namespace TIReportGenerator.Extractors
                 p => p.Cost
             );
         }
-        
+
         public static Protos.ResourceCost Extract(TIResourcesCost cost)
         {
             var result = new Protos.ResourceCost { };

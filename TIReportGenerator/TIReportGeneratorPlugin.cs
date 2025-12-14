@@ -8,6 +8,7 @@ using System.IO;
 using MonoMod.Utils;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using BetterConsoleTables;
 
 namespace TIReportGenerator
 {
@@ -51,6 +52,8 @@ namespace TIReportGenerator
             .DisableAliases()
             .WithTypeConverter(new Util.QuantityConverter())
             .WithTypeConverter(new Util.ModuleListConverter())
+            .WithTypeConverter(new Util.SIConverter())
+            .WithTypeConverter(new Util.CapacityUseConverter())
             .Build();
 
         public static void GenerateReportsSafe()
@@ -110,12 +113,13 @@ namespace TIReportGenerator
         private static void GenerateResourceReport(StreamWriter writer)
         {
             writer.WriteLine($"# Faction Resource Report as of {TITimeState.Now()}");
-            foreach (var faction in GameStateManager.IterateByClass<TIFactionState>()) {
-                writer.WriteLine(Renderers.RenderMarkdownDescription<TIFactionState>(
-                    faction,
-                    Schemas.FactionResources
-                ));
-            }
+
+            var factions = GameStateManager.AllFactions().Select(Extractors.FactionExtractor.Extract);
+            writer.WriteLine(YamlSerializer.Serialize(factions));
+
+            Table table = new(TableConfiguration.Unicode());
+            table.From([.. factions]);
+            writer.WriteLine(table);
         }
 
         private static IEnumerable<(TINationState, string)> GetRelations(TINationState nation)
@@ -176,7 +180,7 @@ namespace TIReportGenerator
 
             var allTemplates = GameStateManager.IterateByClass<TIFactionState>()
                                                .SelectMany(f => f.shipDesigns)
-                                               .Select(Extractors.ShipTemplateExtractor.FromGameState);
+                                               .Select(Extractors.ShipTemplateExtractor.Extract);
 
             writer.WriteLine(YamlSerializer.Serialize(allTemplates));
         }

@@ -5,17 +5,12 @@ namespace TIReportGenerator.Extractors
 {
     public static class ShipTemplateExtractor
     {
-        private static string GetDisplayName(TIGameState obj)
-        {
-            return obj?.GetDisplayName(GameControl.control.activePlayer) ?? "<null>";
-        }
-
-        public static Protos.ShipTemplateData FromGameState(TISpaceShipTemplate t)
+        public static Protos.ShipTemplateData Extract(TISpaceShipTemplate t)
         {
             var data = new Protos.ShipTemplateData
             {
-                Name = t.displayName,
-                FactionName = GetDisplayName(t.designingFaction),
+                Name = Util.ExtractName(t),
+                FactionName = Util.ExtractName(t.designingFaction),
                 ShipClass = t.fullClassName,
                 Role = t.roleStr,
                 HullName = t.hullTemplate.displayName,
@@ -30,47 +25,47 @@ namespace TIReportGenerator.Extractors
                 McUsage = t.hullTemplate.missionControl,
                 MoneyUpkeep = t.GetMonthlyExpenses(FactionResource.Money),
                 BuildTimeDays = Quantity.Get(t.hullTemplate.noShipyardConstructionTime_Days(t.designingFaction), Protos.Unit.Day),
-                
+
                 Mass = new Protos.MassStats
                 {
                     Wet = Quantity.Get(t.wetMass_tons, Protos.Unit.Ton),
                     Dry = Quantity.Get(t.dryMass_tons(), Protos.Unit.Ton)
                 },
-                
+
                 Acceleration = new Protos.AccelerationStats
                 {
                     Combat = Quantity.Get(t.baseCombatAcceleration_gs, Protos.Unit.Gee),
                     Cruise = Quantity.Get(t.baseCruiseAcceleration_gs(forceUpdate: false), Protos.Unit.Gee)
                 },
-                
+
                 NoseArmor = new Protos.ArmorStats
                 {
                     Type = t.noseArmorTemplate.displayName,
                     Value = t.noseArmorValue,
                     Thickness = Quantity.Get(t.noseArmorThickness, Protos.Unit.Meter)
                 },
-                
+
                 LateralArmor = new Protos.ArmorStats
                 {
                     Type = t.lateralArmorTemplate.displayName,
                     Value = t.lateralArmorValue,
                     Thickness = Quantity.Get(t.lateralArmorThickness_m, Protos.Unit.Meter)
                 },
-                
+
                 TailArmor = new Protos.ArmorStats
                 {
                     Type = t.tailArmorTemplate.displayName,
                     Value = t.tailArmorValue,
                     Thickness = Quantity.Get(t.tailArmorThickness, Protos.Unit.Meter)
-                },    
-                
+                },
+
                 RefuelCost = ResourceCostExtractor.Extract(t.propellantTanksBuildCost(faction: null)),
                 BuildCost = ResourceCostExtractor.Extract(t.spaceResourceConstructionCost(forceUpdateToCache: false, shipyard: null)),
                 NoseWeapons = ModuleListExtractor.Extract(t.noseWeapons),
                 HullWeapons = ModuleListExtractor.Extract(t.hullWeapons),
                 UtilityModules = ModuleListExtractor.Extract(t.utilityModules)
             };
-            
+
             return data;
         }
     }

@@ -1,35 +1,34 @@
 using System;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
 namespace TIReportGenerator.Util
-{   
+{
     public class ModuleListConverter : IYamlTypeConverter
     {
         private static readonly Regex MultiplierRegex = new(@"^([0-9]+)x\s+(.*)$");
-        
+
         private (string, int) ParseCount(string text)
         {
             var match = MultiplierRegex.Match(text);
             if (!match.Success) throw new FormatException("Unrecognized ModuleList entry format.");
-            
+
             return (match.Captures[2].Value, int.Parse(match.Captures[1].Value));
         }
-        
+
         public bool Accepts(Type t)
         {
             return t == typeof(Protos.ModuleList);
         }
-        
-        
+
+
         public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
         {
             Protos.ModuleList result = new();
             parser.Consume<SequenceStart>();
-            
+
             while (!parser.Accept<SequenceEnd>(out _))
             {
                 var (name, count) = ParseCount(parser.Consume<Scalar>().Value);
@@ -42,15 +41,52 @@ namespace TIReportGenerator.Util
         public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer serializer)
         {
             var modules = (Protos.ModuleList)value;
-            
+
             emitter.Emit(new SequenceStart(anchor: null, tag: null, isImplicit: false, style: SequenceStyle.Any));
-            
+
             foreach (var kvp in modules.Modules)
             {
                 emitter.Emit(new Scalar($"{kvp.Value}x {kvp.Key}"));
             }
-            
+
             emitter.Emit(new SequenceEnd());
+        }
+    };
+
+    public class CapacityUseConverter : IYamlTypeConverter
+    {
+        private static readonly Regex UsageCapRegex = new(@"^([0-9]+)\s*/\s*([0-9]+)$");
+        private (uint, uint) ParseCap(string text)
+        {
+            var match = UsageCapRegex.Match(text.Trim());
+            if (!match.Success) throw new FormatException("Unrecognized capacity usage format.");
+
+            return (uint.Parse(match.Captures[1].Value), uint.Parse(match.Captures[2].Value));
+        }
+
+        public bool Accepts(Type t)
+        {
+            return t == typeof(Protos.CapacityUse);
+        }
+
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            var scalar = (Scalar)parser.Current;
+            parser.MoveNext();
+
+            var (use, cap) = ParseCap(scalar.Value);
+
+            return new Protos.CapacityUse
+            {
+                Usage = use,
+                Capacity = cap
+            };
+        }
+
+        public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer serializer)
+        {
+            var cap = (Protos.CapacityUse)value;
+            emitter.Emit(new Scalar($"{cap.Usage}/{cap.Capacity}"));
         }
     };
 };

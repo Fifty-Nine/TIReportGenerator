@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+message FactionData {
+    string name = 1;
+    ResourceStockpile money = 2;
+    ResourceStockpile influence = 3;
+    ResourceStockpile operations = 4;
+    ResourceStockpile boost = 5;
+    CapacityUse mission_control = 6;
+    float research = 7;
+    int32 projects = 8;
+    CapacityUse control_point = 9;
+    ResourceStockpile water = 10;
+    ResourceStockpile volatiles = 11;
+    ResourceStockpile metals = 12;
+    ResourceStockpile nobles = 13;
+    ResourceStockpile fissiles = 14;
+    ResourceStockpile antimatter = 15;
+    ResourceStockpile exotics = 16;
+};
+
+message ResourceStockpile
+{
+    float stockpile = 2;
+    float income = 3;
+};
+
+message CapacityUse
+{
+    uint32 usage = 2;
+    uint32 capacity = 3;
+};
