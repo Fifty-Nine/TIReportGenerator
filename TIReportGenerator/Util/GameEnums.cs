@@ -13,7 +13,7 @@ namespace TIReportGenerator.Util
                        .Cast<FactionResource>()
                        .Where(v => v != FactionResource.None);
         }
-        
+
         public static IEnumerable<TechCategory> AllTechCategories()
         {
             return Enum.GetValues(typeof(TechCategory))

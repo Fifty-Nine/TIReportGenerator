@@ -63,7 +63,7 @@ namespace TIReportGenerator.Extractors
                 HullWeapons = ModuleListExtractor.Extract(t.hullWeapons, t => t.moduleTemplate.displayName),
                 UtilityModules = ModuleListExtractor.Extract(t.utilityModules, t => t.moduleTemplate.displayName)
             };
-            
+
             data.RefuelCost.Add(ResourceCostExtractor.Extract(t.propellantTanksBuildCost(faction: null)));
             data.BuildCost.Add(ResourceCostExtractor.Extract(t.spaceResourceConstructionCost(forceUpdateToCache: false, shipyard: null)));
 

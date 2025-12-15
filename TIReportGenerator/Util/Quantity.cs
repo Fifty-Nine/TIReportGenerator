@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -75,7 +76,19 @@ namespace TIReportGenerator.Util
         public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer serializer)
         {
             var q = (Protos.Quantity)value;
-            emitter.Emit(new Scalar($"{SIFormatter.ToString(q.Value)}{q.Units.ToAbbreviation()}"));
+            var (numText, suffix) = SIFormatter.ToStringWithSuffix(q.Value, allowNegativeExp: true);
+            StringBuilder result = new();
+            result.Append(numText);
+            if (suffix != null)
+            {
+                result.Append($" {suffix}{q.Units.ToAbbreviation()}");
+            }
+            else
+            {
+                result.Append($" {q.Units.ToAbbreviation()}");
+            }
+
+            emitter.Emit(new Scalar(result.ToString()));
         }
     };
 }

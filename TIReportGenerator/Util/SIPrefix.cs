@@ -23,14 +23,20 @@ namespace TIReportGenerator.Util
             return Math.Pow(1000, idx - ZeroOffset);
         }
 
-        public static string ToString(double value)
+        public static (string, string) ToStringWithSuffix(double value, bool allowNegativeExp)
         {
-            if (value == 0.0) return "0";
+            if (value == 0.0) return ("0", null);
 
             double mag = Math.Abs(value);
             int exp = (int)Math.Floor(Math.Log10(mag) / 3);
 
             int idx = exp + ZeroOffset;
+
+            if (idx < ZeroOffset && !allowNegativeExp) {
+                idx = ZeroOffset;
+                exp = 0;
+            }
+
             if (idx < 0)
             {
                 exp = -ZeroOffset;
@@ -42,7 +48,8 @@ namespace TIReportGenerator.Util
                 idx = SizeSuffixes.Length - 1;
             }
 
-            double scaled = Math.Round(mag * Math.Pow(1000, -exp), 1);
+            double scaled = mag * Math.Pow(1000, -exp);
+            if (scaled > 1 && !allowNegativeExp) scaled = Math.Round(scaled, 1);
             if (scaled >= 1e3 && (idx < (SizeSuffixes.Length - 1)))
             {
                 scaled /= 1e3;
@@ -51,7 +58,13 @@ namespace TIReportGenerator.Util
 
             var sign = value < 0 ? "-" : "";
             var suffix = SizeSuffixes[idx];
-            return $"{sign}{scaled:0.#}" + (suffix != null ? $" {suffix}" : "");
+            return ($"{sign}{scaled:0.#}", suffix);
+        }
+
+        public static string ToString(double value, bool allowNegativeExp = false)
+        {
+            var (numText, suffix) = ToStringWithSuffix(value, allowNegativeExp);
+            return numText + (suffix != null ? $" {suffix}" : "");
         }
 
         private static readonly Regex NumericRegex = new(@"(\+|-)?([0-9]+(\.[0-9]+)?)\s*([a-zµA-Z])");

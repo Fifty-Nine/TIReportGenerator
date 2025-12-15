@@ -25,7 +25,7 @@ namespace TIReportGenerator.Extractors
                 .Where(p => p.Item2 > 0.0001f || p.Item2 < -0.0001f)
                 .ToDictionary(p => p.Item1, p => new Protos.Percentage { Value = p.Item2});
         }
-        
+
         private static Protos.ModuleList ExtractHabModules(IEnumerable<TIHabModuleState> modules)
         {
             return ModuleListExtractor.Extract(modules, hm => hm.moduleTemplate.displayName);
