@@ -21,7 +21,7 @@ message HabData {
 
     map<string, float> monthly_income = 12;
     map<string, Percentage> lab_bonuses = 13;
-    
+
     ModuleList active_modules = 14;
     ModuleList unpowered_modules = 15;
     ModuleList under_construction_modules = 16;

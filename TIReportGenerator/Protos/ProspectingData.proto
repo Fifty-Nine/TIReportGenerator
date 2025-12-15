@@ -21,7 +21,7 @@ message SiteData {
     string name = 1;
     SiteStatus status = 2;
     string owner = 3;
-    
+
     map<string, ResourceYieldData> resources = 4;
 }
 
