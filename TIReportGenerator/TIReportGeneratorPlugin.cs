@@ -83,7 +83,7 @@ namespace TIReportGenerator
             var savePath = TIUtilities.GetSaveFilePath(saveName);
             var reportPath = Path.Combine(Path.GetDirectoryName(savePath), $"report_{saveName}");
             Directory.CreateDirectory(reportPath.ToString());
-            GenerateReport(GenerateResourceReport, "faction_resources", reportPath);
+            GenerateReport(GenerateFactionsReport, "factions", reportPath);
             GenerateReport(GenerateNationsReport, "nations", reportPath);
             GenerateReport(GenerateHabsAndStationsReport, "habs_and_stations", reportPath);
             GenerateReport(GenerateFleetReport, "fleets", reportPath);
@@ -92,14 +92,13 @@ namespace TIReportGenerator
             GenerateReport(GenerateProspectingReport, "prospecting", reportPath);
             GenerateReport(GenerateOrgsReport, "orgs", reportPath);
             GenerateReport(GenerateArmyReport, "armies", reportPath);
-            GenerateReport(GenerateFactionRelationsReport, "relations", reportPath);
             GenerateReport(GenerateAlienActivityReport, "alien_activity", reportPath);
             GenerateReport(GenerateCouncilorReport, "councilors", reportPath);
         }
 
         private static string GetReportPath(string name, string dir)
         {
-            return Path.Combine(dir, $"{name}.md");
+            return Path.Combine(dir, $"{name}.yml");
         }
 
         private static void GenerateReport(Action<StreamWriter> fn, string name, string dir)
@@ -115,7 +114,7 @@ namespace TIReportGenerator
             TIReportGeneratorPlugin.Log.LogInfo($"Report written to {filePath}");
         }
 
-        private static void GenerateResourceReport(StreamWriter writer)
+        private static void GenerateFactionsReport(StreamWriter writer)
         {
             writer.WriteLine($"# Faction Resource Report as of {TITimeState.Now()}");
 
@@ -220,20 +219,13 @@ namespace TIReportGenerator
             writer.WriteLine(serializer.Serialize(armies));
         }
 
-        private static void GenerateFactionRelationsReport(StreamWriter writer)
-        {
-            writer.WriteLine($"# Faction Relations Report as of {TITimeState.Now()}");
-            var relations = FactionRelation.BuildRelationsList(GameStateManager.AllHumanFactions());
-
-            writer.WriteLine(Renderers.RenderMarkdownTable(relations, Schemas.FactionRelations));
-        }
         private static void GenerateAlienActivityReport(StreamWriter writer)
         {
             writer.WriteLine($"# Alien Activity Report as of {TITimeState.Now()}");
             var player = GameControl.control.activePlayer;
             var hate = player.GetEstimatedAlienHate();
             var warThreshold = TIGlobalConfig.globalConfig.factionHateWarThreshold;
-            writer.WriteLine($"Estimated Alien Hate: {FactionRelation.CategorizeHateValue(hate)} ({hate:F0})");
+            writer.WriteLine($"Estimated Alien Hate: {Extractors.FactionExtractor.CategorizeHate(hate)} ({hate:F0})");
             writer.WriteLine($"Note: Hate level above {warThreshold:F0} implies war footing, {warThreshold*4:F0} implies total war.");
             writer.WriteLine($"Hate last established on: {player.GetLastDateofFixedAlienHate().ToCustomTimeDateString()}");
             writer.WriteLine();

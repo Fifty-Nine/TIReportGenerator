@@ -21,6 +21,8 @@ message FactionData {
     ResourceStockpile fissiles = 14;
     ResourceStockpile antimatter = 15;
     ResourceStockpile exotics = 16;
+
+    map<string, FactionRelation> relations = 17;
 };
 
 message ResourceStockpile
@@ -33,4 +35,19 @@ message CapacityUse
 {
     uint32 usage = 2;
     uint32 capacity = 3;
+};
+
+enum Treaty
+{
+    Truce = 0;
+    NonAggressionPact = 1;
+    IntelSharing = 2;
+}
+
+message FactionRelation
+{
+    float hatred = 1;
+    string opinion = 2;
+    bool at_war = 3;
+    repeated Treaty treaties = 4;
 };

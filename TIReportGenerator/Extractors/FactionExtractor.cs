@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using PavonisInteractive.TerraInvicta;
 
 namespace TIReportGenerator.Extractors
@@ -31,9 +34,62 @@ namespace TIReportGenerator.Extractors
             };
         }
 
+        private static IEnumerable<Protos.Treaty> ExtractTreaties(TIFactionState from, TIFactionState to)
+        {
+            List<Protos.Treaty> result = [];
+            if (from.HasTruce(to)) result.Add(Protos.Treaty.Truce);
+            if (from.HasNAP(to)) result.Add(Protos.Treaty.NonAggressionPact);
+            if (from.intelSharingFactions.Contains(to)) result.Add(Protos.Treaty.IntelSharing);
+            return result;
+        }
+
+        internal enum InformalRelationType
+        {
+            Pleased = -2,
+            Tolerant = -1,
+            Wary = 0,
+            Annoyed = 10,
+            Displeased = 20,
+            Aggrieved = 30,
+            Angry = 40,
+            Furious = 50,
+            Outraged = 60,
+            Hate = 70
+        };
+
+        internal static InformalRelationType CategorizeHate(float hate)
+        {
+            return Enum.GetValues(typeof(InformalRelationType))
+                       .Cast<InformalRelationType>()
+                       .OrderByDescending(v => (float)v)
+                       .First(v => hate > (float)v);
+        }
+
+        internal static InformalRelationType CategorizeHate(TIFactionState from, TIFactionState to)
+        {
+            if (from.permanentAlly(to))
+            {
+                return InformalRelationType.Pleased;
+            }
+
+            return CategorizeHate(from.GetFactionHate(to));
+        }
+
+        private static Protos.FactionRelation ExtractRelation(TIFactionState from, TIFactionState to)
+        {
+            var data = new Protos.FactionRelation
+            {
+                Hatred = from.GetFactionHate(to),
+                Opinion = CategorizeHate(from, to).ToString(),
+                AtWar = from.AI_AtWarWithFaction(to)
+            };
+            data.Treaties.Add(ExtractTreaties(from, to));
+            return data;
+        }
+
         public static Protos.FactionData Extract(TIFactionState faction)
         {
-            return new Protos.FactionData
+            var data = new Protos.FactionData
             {
                 Name = Util.ExtractName(faction),
                 Money = ExtractIncome(faction, FactionResource.Money),
@@ -52,6 +108,14 @@ namespace TIReportGenerator.Extractors
                 Antimatter = ExtractIncome(faction, FactionResource.Antimatter),
                 Exotics = ExtractIncome(faction, FactionResource.Exotics)
             };
+
+            data.Relations.Add(
+                GameStateManager.AllFactions()
+                    .Where(o => o != faction)
+                    .Select(o => (Util.ExtractName(o), ExtractRelation(faction, o)))
+                    .ToDictionary(p => p.Item1, p => p.Item2)
+            );
+            return data;
         }
     };
 }

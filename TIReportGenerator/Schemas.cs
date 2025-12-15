@@ -11,11 +11,6 @@ public static class Schemas
         return TIUtilities.FormatSmallNumber(Convert.ToDouble(v));
     }
 
-    private static string FormatBool(bool v)
-    {
-        return v ? "yes" : "no";
-    }
-
     private static string PlayerDisplayName<T>(T obj, string nullText = "<null>") where T : TIGameState
     {
         return obj?.GetDisplayName(GameControl.control.activePlayer) ?? nullText;
@@ -89,14 +84,6 @@ public static class Schemas
         ];
         return result.ToDictionary(kvp => kvp.Item1, kvp => kvp.Item2);
     }
-
-    public static ObjectSchema<FactionRelation> FactionRelations = new ObjectSchema<FactionRelation>()
-        .AddField("Faction", r => PlayerDisplayName(r.From))
-        .AddField("Other Faction", r => PlayerDisplayName(r.To))
-        .AddField("War", r => r.AtWar, FormatBool)
-        .AddField("Opinion", r => r.Relationship)
-        .AddField("Treaties", r => r.Treaties, treaties => FormatList(treaties, FactionRelation.TreatyName))
-    ;
 
     public static ObjectSchema<TIRegionXenoformingState> XenoformingSite = new ObjectSchema<TIRegionXenoformingState>()
         .AddField("Region", x => PlayerDisplayName(x.region))
