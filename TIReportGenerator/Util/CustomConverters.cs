@@ -119,4 +119,23 @@ namespace TIReportGenerator.Util
             emitter.Emit(new Scalar($"{p.Value:P1}"));
         }
     }
-};
+
+    public class ResearchProgressConverter : IYamlTypeConverter
+    {
+        public bool Accepts(Type type)
+        {
+            return type == typeof(Protos.ResearchProgress);
+        }
+
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer serializer)
+        {
+            var progress = (Protos.ResearchProgress)value;
+            emitter.Emit(new Scalar($"{SIFormatter.ToString(progress.Progress)}/{SIFormatter.ToString(progress.Cost)}"));
+        }
+    };
+}

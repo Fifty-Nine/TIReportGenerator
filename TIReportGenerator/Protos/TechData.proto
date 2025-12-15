@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+enum TechStatus
+{
+    Completed = 0;
+    Active = 1;
+    Available = 2;
+    Locked = 3;
+    Blocked = 4;
+}
+
+message AllTechsData {
+    repeated TechData global_techs = 1;
+    repeated ProjectData faction_projects = 2;
+}
+
+message TechData {
+    string name = 1;
+    TechStatus status = 2;
+    ResearchProgress progress = 3;
+    float remaining_tree_cost = 4;
+    string largest_contribution = 5;
+}
+
+message ProjectData {
+    string name = 1;
+    TechStatus status = 2;
+    ResearchProgress progress = 3;
+    float remaining_tree_cost = 4;
+    repeated string allowed_for_factions = 5;
+    repeated string completed_by_factions = 6;
+}
+
+message ResearchProgress {
+    float progress = 1;
+    float cost = 2;
+}

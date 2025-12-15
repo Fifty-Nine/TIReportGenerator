@@ -56,6 +56,7 @@ namespace TIReportGenerator
             .WithTypeConverter(new Util.SIConverter())
             .WithTypeConverter(new Util.CapacityUseConverter())
             .WithTypeConverter(new Util.PercentageConverter())
+            .WithTypeConverter(new Util.ResearchProgressConverter())
             .Build();
         }
 
@@ -178,22 +179,15 @@ namespace TIReportGenerator
         private static void GenerateTechReport(StreamWriter writer)
         {
             writer.WriteLine($"# Tech Report as of {TITimeState.Now()}");
-            writer.WriteLine("Status Legend:");
-            writer.WriteLine(" * Completed: You have finished this technology or project.");
-            writer.WriteLine(" * Active: This technology or project is being researched.");
-            writer.WriteLine(" * Available: Technology or project is ready to research.");
-            writer.WriteLine(" * Locked: Prerequisites met, but project not yet rolled/unlocked by your faction.");
-            writer.WriteLine(" * Blocked: Research prerequisites not met.");
-            writer.WriteLine("## Global Technologies");
-            var allTechs = TIGlobalResearchState.GetAllTechs().OrderBy(Schemas.GetTechStatus);
-            writer.WriteLine(Renderers.RenderMarkdownTable(allTechs, Schemas.GlobalTechs));
-            writer.WriteLine();
-            writer.WriteLine("## Player Faction Projects");
-            var filteredProjects = TIGlobalResearchState.GetAllProjects()
-                                                        .Where(p => !IsAlienOnlyProject(p))
-                                                        .OrderBy(Schemas.GetProjectStatus);
-            writer.WriteLine(Renderers.RenderMarkdownTable(filteredProjects, Schemas.FactionProjects));
-            writer.WriteLine();
+            writer.WriteLine("# Status Legend:");
+            writer.WriteLine("#  * Completed: You have finished this technology or project.");
+            writer.WriteLine("#  * Active: This technology or project is being researched.");
+            writer.WriteLine("#  * Available: Technology or project is ready to research.");
+            writer.WriteLine("#  * Locked: Prerequisites met, but project not yet rolled/unlocked by your faction.");
+            writer.WriteLine("#  * Blocked: Research prerequisites not met.");
+
+            var serializer = GetSerializer();
+            writer.WriteLine(serializer.Serialize(Extractors.TechExtractor.ExtractAllTechs()));
         }
 
         private static void GenerateProspectingReport(StreamWriter writer)
