@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+import "SharedMessages.proto";
+
+message ArmyData {
+    string name = 1;
+    string faction = 2;
+    string nation = 3;
+    string location = 4;
+    float miltech = 5;
+    Percentage strength = 6;
+    bool has_navy = 7;
+    string status = 8;
+}

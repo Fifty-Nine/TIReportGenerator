@@ -221,10 +221,12 @@ namespace TIReportGenerator
         {
             writer.WriteLine($"# World Armies Report as of {TITimeState.Now()}");
 
+            var serializer = GetSerializer();
             var armies = GameStateManager.IterateByClass<TIArmyState>()
-                                         .Where(a => !a.destroyed);
+                                         .Where(a => !a.destroyed)
+                                         .Select(Extractors.ArmyExtractor.Extract);
 
-            writer.WriteLine(Renderers.RenderMarkdownTable(armies, Schemas.Armies));
+            writer.WriteLine(serializer.Serialize(armies));
         }
 
         private static void GenerateFactionRelationsReport(StreamWriter writer)

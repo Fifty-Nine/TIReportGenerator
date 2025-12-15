@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Mono.Cecil.Mdb;
 using PavonisInteractive.TerraInvicta;
 using TIReportGenerator.Util;
 
@@ -44,9 +45,10 @@ namespace TIReportGenerator.Extractors
                 CanResupply = hab.AllowsResupply(hab.coreFaction, allowHumanTheft: false),
                 CanConstruct = hab.AllowsShipConstruction(hab.coreFaction),
                 ConstructionTimeModifier = hab.GetModuleConstructionTimeModifier(),
-                ActiveModules = ExtractHabModules(hab.AllModules().Where(m => m.active && m.powered && !m.underConstruction)),
-                UnpoweredModules = ExtractHabModules(hab.AllModules().Where(m => !m.powered)),
-                UnderConstructionModules = ExtractHabModules(hab.AllModules().Where(m => m.underConstruction))
+                ActiveModules = ExtractHabModules(hab.AllModules().Where(m => m.active && !m.destroyed)),
+                UnpoweredModules = ExtractHabModules(hab.AllModules().Where(m => !m.powered && !m.underConstruction && !m.destroyed)),
+                UnderConstructionModules = ExtractHabModules(hab.AllModules().Where(m => m.underConstruction && !m.destroyed)),
+                DestroyedModules = ExtractHabModules(hab.AllModules().Where(m => m.destroyed))
             };
             result.MonthlyIncome.Add(ExtractResources(hab));
             result.LabBonuses.Add(ExtractLabBonuses(hab));

@@ -8,22 +8,24 @@ import "SharedMessages.proto";
 
 message HabData {
     string name = 1;
-    string type = 2;
-    string location = 3;
-    int32 tier = 4;
-    int32 docked_fleets = 5;
-    int32 free_slots = 6;
-    float population = 7;
-    bool can_resupply = 8;
-    bool can_construct = 9;
-    float construction_time_modifier = 10;
+    string faction = 2;
+    string type = 3;
+    string location = 4;
+    int32 tier = 5;
+    int32 docked_fleets = 6;
+    int32 free_slots = 7;
+    float population = 8;
+    bool can_resupply = 9;
+    bool can_construct = 10;
+    float construction_time_modifier = 11;
 
-    map<string, float> monthly_income = 11;
-    map<string, Percentage> lab_bonuses = 12;
+    map<string, float> monthly_income = 12;
+    map<string, Percentage> lab_bonuses = 13;
     
-    ModuleList active_modules = 13;
-    ModuleList unpowered_modules = 14;
-    ModuleList under_construction_modules = 15;
+    ModuleList active_modules = 14;
+    ModuleList unpowered_modules = 15;
+    ModuleList under_construction_modules = 16;
+    ModuleList destroyed_modules = 17;
 }
 
 
