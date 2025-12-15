@@ -210,11 +210,12 @@ namespace TIReportGenerator
         {
             writer.WriteLine($"# Orgs Report as of {TITimeState.Now()}");
 
+            var serializer = GetSerializer();
             var allOrgs = GameStateManager.IterateByClass<TIOrgState>()
-                                          .Where(org => org.factionOrbit != null);
-            foreach (var org in allOrgs) {
-                writer.WriteLine(Renderers.RenderMarkdownDescription(org, Schemas.Orgs));
-            }
+                                          .Where(org => org.factionOrbit != null)
+                                          .Select(Extractors.OrgExtractor.Extract);
+
+            writer.WriteLine(serializer.Serialize(allOrgs));
         }
 
         private static void GenerateArmyReport(StreamWriter writer)

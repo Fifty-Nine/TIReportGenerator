@@ -12,7 +12,7 @@ namespace TIReportGenerator.Extractors
         {
             var values = GameEnums.AllFactionResources()
                             .Select(v => (Resource: v, Cost: c.GetSingleCostValue(v)))
-                            .Where(p => p.Cost >= 0.05f || p.Cost <= -0.05f)
+                            .ExcludeZeroValues(p => p.Cost)
             ;
             return values.ToDictionary(
                 p => p.Resource,

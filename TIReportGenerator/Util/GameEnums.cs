@@ -19,5 +19,12 @@ namespace TIReportGenerator.Util
             return Enum.GetValues(typeof(TechCategory))
                        .Cast<TechCategory>();
         }
+
+        public static IEnumerable<CouncilorAttribute> AllCouncilorAttributes()
+        {
+            return Enum.GetValues(typeof(CouncilorAttribute))
+                       .Cast<CouncilorAttribute>()
+                       .Where(c => c != CouncilorAttribute.None);
+        }
     };
 }

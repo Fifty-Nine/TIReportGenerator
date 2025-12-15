@@ -93,11 +93,6 @@ public static class Schemas
                    .Cast<CouncilorAttribute>()
                    .Where(a => a != CouncilorAttribute.None);
     }
-
-    public static string FormatResourceCost(TIResourcesCost c)
-    {
-        return FormatList(Extractors.ResourceCostExtractor.ResourceCostToDictionary(c), kvp => $"{TIUtilities.FormatSmallNumber(kvp.Value)} {TIUtilities.GetResourceString(kvp.Key)}");
-    }
     private static bool InProgress(TIGenericTechTemplate t)
     {
         var project = t as TIProjectTemplate;
@@ -296,49 +291,6 @@ public static class Schemas
                                                   : site.GetExpectedResourceGrade(resource).ToString();
     }
 
-    private static string FormatOrgOrbit(TIFactionState f)
-    {
-        return f != null ? PlayerDisplayName(f) : "none";
-    }
-
-    private static string FormatTraitRequirements(IEnumerable<TITraitTemplate> traits)
-    {
-        return FormatList(traits, trait => trait.displayName);
-    }
-
-    private static Dictionary<CouncilorAttribute, int> GetOrgStatBonuses(TIOrgState org)
-    {
-        var result = new Dictionary<CouncilorAttribute, int>();
-        var stats = Enum.GetValues(typeof(CouncilorAttribute)).Cast<CouncilorAttribute>();
-        foreach (var v in stats)
-        {
-            var bonus = org.GetStatBonus(v);
-            if (bonus == 0) continue;
-            result[v] = bonus;
-        }
-        return result;
-    }
-
-    private static string FormatStatBonuses(Dictionary<CouncilorAttribute, int> bonuses)
-    {
-        return FormatList(bonuses, kvp => $"{kvp.Value:+0;-0;} {kvp.Key.ToString()}");
-    }
-
-    private static Dictionary<FactionResource, float> GetOrgIncomes(TIOrgState org)
-    {
-        var result = new List<(FactionResource, float)>
-        {
-            (FactionResource.Money, org.incomeMoney_month),
-            (FactionResource.Influence, org.incomeInfluence_month),
-            (FactionResource.Operations, org.incomeOps_month),
-            (FactionResource.Boost, org.incomeBoost_month),
-            (FactionResource.MissionControl, org.incomeMissionControl),
-            (FactionResource.Research, org.incomeResearch_month),
-            (FactionResource.Projects, org.projectCapacityGranted)
-        };
-        return result.Where(kvp => kvp.Item2 > 0.05f || kvp.Item2 < -0.05f)
-                     .ToDictionary(kvp => kvp.Item1, kvp => kvp.Item2);
-    }
     private static Dictionary<FactionResource, float> GetCouncilorIncomes(TICouncilorState councilor)
     {
         return Util.GameEnums.AllFactionResources().Select(r => (r, councilor.GetMonthlyIncome(r)))
@@ -346,96 +298,9 @@ public static class Schemas
                                     .ToDictionary(rp => rp.Item1, rp => rp.Item2);
     }
 
-    private static string FormatMissions(IEnumerable<TIMissionTemplate> missions)
-    {
-        return FormatList(missions, mission => mission.displayName);
-    }
-
     private static string FormatIncomes(Dictionary<FactionResource, float> incomes)
     {
         return FormatList(incomes, kvp => $"{(kvp.Value > 0 ? "+" : "")}{FormatSmallNumber(kvp.Value)} {TIUtilities.GetResourceString(kvp.Key)}");
-    }
-
-    private static string FormatTechBonuses(IEnumerable<TechBonus> bonuses)
-    {
-        return FormatList(bonuses, b => $"{b.bonus:+0.0%;-0.0%; 0.0%} {TIGenericTechTemplate.GetTechCategoryString(b.category)}");
-    }
-
-    private static string GetOtherOrgBonuses(TIOrgState org)
-    {
-        List<string> features = [];
-        if (org.grantsMarked)
-        {
-            features.Add("adds \"Marked\" trait");
-        }
-
-        if (org.projectGranted != null)
-        {
-            features.Add($"unlocks \"{org.projectGranted.displayName}\" project");
-        }
-
-        if (org.miningBonus != 0.0f)
-        {
-            features.Add($"{org.miningBonus:+0.0%;-0.0%;0.0%} bonus space mining output");
-        }
-
-        if (org.XPModifier != 0.0f)
-        {
-            features.Add($"{org.XPModifier:+0.0%;-0.0%;0.0%} XP modifier");
-        }
-
-        if (org.takeoverDefense != 0.0f)
-        {
-            features.Add($"{org.takeoverDefense:N0} additional takeover defense");
-        }
-
-        Action<float, string> addPriorityBonus = (val, desc) =>
-        {
-            if (val < 0.001f && val > -0.001f) return;
-
-            features.Add($"{val:+0.0%;-0.0%;0.0%} {desc} priority");
-        };
-
-        addPriorityBonus(org.economyBonus, "economy");
-        addPriorityBonus(org.welfareBonus, "welfare");
-        addPriorityBonus(org.environmentBonus, "environment");
-        addPriorityBonus(org.knowledgeBonus, "knowledge");
-        addPriorityBonus(org.governmentBonus, "government");
-        addPriorityBonus(org.unityBonus, "unity");
-        addPriorityBonus(org.militaryBonus, "military");
-        addPriorityBonus(org.oppressionBonus, "oppression");
-        addPriorityBonus(org.spoilsBonus, "spoils");
-        addPriorityBonus(org.spaceDevBonus, "funding");
-        addPriorityBonus(org.spaceflightBonus, "exofighters");
-        addPriorityBonus(org.MCBonus, "mission control");
-
-        return string.Join(", ", features);
-    }
-
-    private static string GetOrgStatus(TIOrgState org)
-    {
-        if (org.assignedCouncilor != null) {
-            if (org.applyingBonuses) {
-                return $"Equipped ({org.assignedCouncilor.displayName})";
-            } else {
-                return $"Inactive ({org.assignedCouncilor.displayName})";
-            }
-        }
-
-        if (org.factionOrbit == null) {
-            return "Limbo (no faction orbit)";
-        }
-
-        var faction = org.factionOrbit;
-        if (faction.unassignedOrgs.Contains(org)) {
-            return "Unassigned, In Pool";
-        }
-
-        if (faction.availableOrgs.Contains(org)) {
-            return "Available On Market";
-        }
-
-        return $"Limbo (orbiting {PlayerDisplayName(faction)})";
     }
 
     public static string FormatList<T>(IEnumerable<T> list, Func<T, string> formatter = null)
@@ -543,23 +408,6 @@ public static class Schemas
 
     public static ObjectSchema<TISpaceGameState> HabSitesAndBodies =
         ObjectSchema<TISpaceGameState>.mergeDerivedObjects(HabSites, Bodies);
-
-
-    public static ObjectSchema<TIOrgState> Orgs = new ObjectSchema<TIOrgState>()
-        .AddField("Name", org => PlayerDisplayName(org))
-        .AddField("Tier", org => org.tierStars)
-        .AddField("Orbit", org => org.factionOrbit, FormatOrgOrbit)
-        .AddField("Status", GetOrgStatus)
-        .AddField("Eligible for Player Faction", org => org.IsEligibleForFaction(GameControl.control.activePlayer), FormatBool)
-        .AddField("Required National Ties", org => org.requiresNationInterest ? org.requiredNationInterest : null, n => PlayerDisplayName(n, "none"))
-        .AddField("Trait Requirements", org => org.requiredOwnerTraits, FormatTraitRequirements)
-        .AddField("Equip/Transfer Cost", org => org.GetPurchaseOrTransferCost(GameControl.control.activePlayer), FormatResourceCost)
-        .AddField("Skills", GetOrgStatBonuses, FormatStatBonuses)
-        .AddField("Income", GetOrgIncomes, FormatIncomes)
-        .AddField("Missions Granted", org => org.missionsGranted, FormatMissions)
-        .AddField("Tech Bonus", org => org.techBonuses, FormatTechBonuses)
-        .AddField("Bonuses", GetOtherOrgBonuses)
-    ;
 
     public static ObjectSchema<FactionRelation> FactionRelations = new ObjectSchema<FactionRelation>()
         .AddField("Faction", r => PlayerDisplayName(r.From))

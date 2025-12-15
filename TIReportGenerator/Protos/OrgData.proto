@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+import "SharedMessages.proto";
+
+enum OrgStatus
+{
+    Equipped = 0;
+    Inactive = 1;
+    LimboNoFactionOrbit = 2;
+    InFactionPool = 3;
+    InFactionMarket = 4;
+    LimboInOrbit = 5;
+}
+
+message OrgData {
+    string name = 1;
+    int32 tier = 2;
+    string orbit_faction = 3;
+    OrgStatus status = 4;
+    string councilor = 5;
+    bool eligible_for_player = 6;
+    string home_nation = 7;
+    bool home_nation_connection_required = 8;
+    repeated string trait_requirements = 9;
+    map<string, float> equip_cost = 10;
+    map<string, float> income = 11;
+    map<string, Percentage> tech_bonuses = 12;
+    map<string, Percentage> priority_bonuses = 13;
+    map<string, int32> skill_bonuses = 14;
+    bool grants_marked = 15;
+    Percentage xp_modifier = 16;
+    Percentage mining_bonus = 17;
+    float takeover_defense = 18;
+    repeated string missions_granted = 19;
+}
