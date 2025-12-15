@@ -7,12 +7,12 @@ namespace TIReportGenerator.Extractors
 {
     public static class ModuleListExtractor
     {
-        public static Protos.ModuleList Extract(IEnumerable<ModuleDataEntry> modules)
+        public static Protos.ModuleList Extract<T>(IEnumerable<T> modules, Func<T, string> getName)
         {
-            var unique = modules.Select(m => m.moduleTemplate.displayName).Distinct();
+            var unique = modules.Select(getName).Distinct();
             var result = new Protos.ModuleList {};
             result.Modules.Add(
-                unique.ToDictionary(m => m, m => modules.Count(o => o.moduleTemplate.displayName == m))
+                unique.ToDictionary(m => m, m => modules.Count(o => getName(o) == m))
             );
             return result;
         }

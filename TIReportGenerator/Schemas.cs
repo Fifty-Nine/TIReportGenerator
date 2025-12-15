@@ -435,7 +435,7 @@ public static class Schemas
     }
     private static Dictionary<FactionResource, float> GetCouncilorIncomes(TICouncilorState councilor)
     {
-        return Extractors.ResourceCostExtractor.AllFactionResources().Select(r => (r, councilor.GetMonthlyIncome(r)))
+        return Util.GameEnums.AllFactionResources().Select(r => (r, councilor.GetMonthlyIncome(r)))
                                     .Where(rp => rp.Item2 > 0.05f || rp.Item2 < -0.05f)
                                     .ToDictionary(rp => rp.Item1, rp => rp.Item2);
     }

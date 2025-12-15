@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+import "SharedMessages.proto";
+
+message HabData {
+    string name = 1;
+    string type = 2;
+    string location = 3;
+    int32 tier = 4;
+    int32 docked_fleets = 5;
+    int32 free_slots = 6;
+    float population = 7;
+    bool can_resupply = 8;
+    bool can_construct = 9;
+    float construction_time_modifier = 10;
+
+    map<string, float> monthly_income = 11;
+    map<string, Percentage> lab_bonuses = 12;
+    
+    ModuleList active_modules = 13;
+    ModuleList unpowered_modules = 14;
+    ModuleList under_construction_modules = 15;
+}
+
+

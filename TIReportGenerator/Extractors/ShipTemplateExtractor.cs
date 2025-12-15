@@ -59,12 +59,13 @@ namespace TIReportGenerator.Extractors
                     Thickness = Quantity.Get(t.tailArmorThickness, Protos.Unit.Meter)
                 },
 
-                RefuelCost = ResourceCostExtractor.Extract(t.propellantTanksBuildCost(faction: null)),
-                BuildCost = ResourceCostExtractor.Extract(t.spaceResourceConstructionCost(forceUpdateToCache: false, shipyard: null)),
-                NoseWeapons = ModuleListExtractor.Extract(t.noseWeapons),
-                HullWeapons = ModuleListExtractor.Extract(t.hullWeapons),
-                UtilityModules = ModuleListExtractor.Extract(t.utilityModules)
+                NoseWeapons = ModuleListExtractor.Extract(t.noseWeapons, t => t.moduleTemplate.displayName),
+                HullWeapons = ModuleListExtractor.Extract(t.hullWeapons, t => t.moduleTemplate.displayName),
+                UtilityModules = ModuleListExtractor.Extract(t.utilityModules, t => t.moduleTemplate.displayName)
             };
+            
+            data.RefuelCost.Add(ResourceCostExtractor.Extract(t.propellantTanksBuildCost(faction: null)));
+            data.BuildCost.Add(ResourceCostExtractor.Extract(t.spaceResourceConstructionCost(forceUpdateToCache: false, shipyard: null)));
 
             return data;
         }

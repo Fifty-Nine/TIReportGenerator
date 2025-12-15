@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using System.Linq;
 using PavonisInteractive.TerraInvicta;
-using YamlDotNet.Core.Tokens;
 
 namespace TIReportGenerator.Extractors
 {
@@ -24,28 +24,20 @@ namespace TIReportGenerator.Extractors
             return faction != null ? Util.ExtractName(faction) : "Undecided";
         }
 
-        private static Protos.PublicOpinion ExtractPublicOpinion(TINationState nation)
+        private static IDictionary<string, Protos.Percentage> ExtractPublicOpinion(TINationState nation)
         {
-            var result = new Protos.PublicOpinion {};
-            result.Support.Add(
-                nation.publicOpinion.ToDictionary(
-                    kvp => ExtractIdeology(kvp.Key),
-                    kvp => new Protos.Percentage { Value = kvp.Value }
-                )
+            return nation.publicOpinion.ToDictionary(
+                kvp => ExtractIdeology(kvp.Key),
+                kvp => new Protos.Percentage { Value = kvp.Value }
             );
-            return result;
         }
 
-        private static Protos.NationalRelations ExtractRelations(TINationState nation)
+        private static IDictionary<string, Protos.NationalRelationType> ExtractRelations(TINationState nation)
         {
-             var result = new Protos.NationalRelations {};
-             result.Relations.Add(
-                nation.allies.Select(v => (Util.ExtractName(v), Protos.NationalRelationType.Ally))
+            return nation.allies.Select(v => (Util.ExtractName(v), Protos.NationalRelationType.Ally))
                       .Concat(nation.rivals.Select(v => (Util.ExtractName(v), Protos.NationalRelationType.Rival)))
                       .Concat(nation.wars.Select(v => (Util.ExtractName(v), Protos.NationalRelationType.War)))
-                      .ToDictionary(kvp => kvp.Item1, kvp => kvp.Item2)
-             );
-             return result;
+                      .ToDictionary(kvp => kvp.Item1, kvp => kvp.Item2);
         }
 
         public static Protos.NationData Extract(TINationState nation)
@@ -71,12 +63,12 @@ namespace TIReportGenerator.Extractors
                 Miltech = nation.militaryTechLevel,
                 Exofighters = nation.numSTOFighters,
                 Nukes = nation.numNuclearWeapons,
-                AtWar = nation.atWar,
-                Relations = ExtractRelations(nation),
-                PublicOpinion = ExtractPublicOpinion(nation)
+                AtWar = nation.atWar
             };
 
             data.ControlPoints.AddRange(nation.controlPoints.Select(ExtractControlPoint));
+            data.PublicOpinion.Add(ExtractPublicOpinion(nation));
+            data.Relations.Add(ExtractRelations(nation));
 
             return data;
         }

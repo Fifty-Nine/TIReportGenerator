@@ -39,8 +39,8 @@ message ShipTemplateData {
   ModuleList hull_weapons = 24;
   ModuleList utility_modules = 25;
   
-  ResourceCost refuel_cost = 26;
-  ResourceCost build_cost = 27;
+  map<string, float> refuel_cost = 26;
+  map<string, float> build_cost = 27;
 }
 
 message MassStats {

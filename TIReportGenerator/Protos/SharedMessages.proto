@@ -21,11 +21,6 @@ message Quantity {
     Unit units = 2;
 }
 
-message ResourceCost
-{
-    map<string, float> costs = 1;
-}
-
 message ModuleList
 {
     map<string, int32> modules = 1;

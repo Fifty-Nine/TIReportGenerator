@@ -116,7 +116,7 @@ namespace TIReportGenerator.Util
         public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer serializer)
         {
             var p = (Protos.Percentage)value;
-            emitter.Emit(new Scalar($"{p.Value:P1%}"));
+            emitter.Emit(new Scalar($"{p.Value:P1}"));
         }
     }
 };

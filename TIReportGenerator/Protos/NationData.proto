@@ -28,9 +28,9 @@ message NationData {
   int32 nukes = 19;
   bool at_war = 20;
 
-  PublicOpinion public_opinion = 22;
-  NationalRelations relations = 23;
-  repeated ControlPointData control_points = 21;
+  map<string, Percentage> public_opinion = 21;
+  map<string, NationalRelationType> relations = 22;
+  repeated ControlPointData control_points = 23;
 }
 
 message ControlPointData {
@@ -41,17 +41,9 @@ message ControlPointData {
   float cp_cost = 5;
 }
 
-message PublicOpinion {
-  map<string, Percentage> support = 1;
-}
-
 enum NationalRelationType
 {
   Ally = 0;
   Rival = 1;
   War = 2;
-};
-
-message NationalRelations {
-  map<string, NationalRelationType> relations = 1;
 };

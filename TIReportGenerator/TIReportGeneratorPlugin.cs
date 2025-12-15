@@ -138,10 +138,11 @@ namespace TIReportGenerator
         {
             writer.WriteLine($"# Habs and Stations Report as of {TITimeState.Now()}");
 
-            foreach (var hab in GameStateManager.IterateByClass<TIHabState>())
-            {
-                writer.Write(Renderers.RenderMarkdownDescription(hab, Schemas.HabsAndStations));
-            }
+            var serializer = GetSerializer();
+            var habs = GameStateManager.IterateByClass<TIHabState>()
+                                       .Select(Extractors.HabExtractor.Extract);
+
+            writer.WriteLine(serializer.Serialize(habs));
         }
 
         private static void GenerateFleetReport(StreamWriter writer)
