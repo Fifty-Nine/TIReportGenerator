@@ -1,0 +1,27 @@
+
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+message XenoformingSite {
+    string nation = 1;
+    string region = 2;
+    string severity = 3;
+}
+
+message XenoCouncilor {
+    string name = 1;
+    string location = 2;
+    string mission = 3;
+}
+
+message ThreatReport {
+    string player = 1;
+    float estimated_hate = 2;
+    float war_hate_threshold = 3;
+    float total_war_hate_threshold = 4;
+    repeated XenoCouncilor known_xenos = 5;
+    repeated XenoformingSite known_xenoforming = 6;
+}

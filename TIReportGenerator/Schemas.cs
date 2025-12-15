@@ -41,20 +41,6 @@ public static class Schemas
         return string.Join(", ", list.Select(formatter));
     }
 
-    public static string GetCouncilorLocation(TICouncilorState councilor)
-    {
-        return GameControl.control.activePlayer.HasIntelOnCouncilorLocation(councilor) ?
-            PlayerDisplayName(councilor.location) :
-            "Unknown";
-    }
-
-    public static string GetCouncilorMission(TICouncilorState councilor)
-    {
-        return GameControl.control.activePlayer.HasIntelOnCouncilorMission(councilor) ?
-            councilor.activeMission?.missionTemplate?.displayName ?? "None" :
-            "Unknown";
-    }
-
     public enum CouncilorStatElement
     {
         Total,
@@ -84,18 +70,6 @@ public static class Schemas
         ];
         return result.ToDictionary(kvp => kvp.Item1, kvp => kvp.Item2);
     }
-
-    public static ObjectSchema<TIRegionXenoformingState> XenoformingSite = new ObjectSchema<TIRegionXenoformingState>()
-        .AddField("Region", x => PlayerDisplayName(x.region))
-        .AddField("Nation", x => PlayerDisplayName(x.region.nation))
-        .AddField("Severity", x => x.severityDescription)
-    ;
-
-    public static ObjectSchema<TICouncilorState> XenoCouncilor = new ObjectSchema<TICouncilorState>()
-        .AddField("Name", x => PlayerDisplayName(x))
-        .AddField("Location", GetCouncilorLocation)
-        .AddField("Mission", GetCouncilorMission)
-    ;
 
     public static ObjectSchema<(CouncilorAttribute, Dictionary<CouncilorStatElement, float>)> CouncilorStats = new ObjectSchema<(CouncilorAttribute, Dictionary<CouncilorStatElement, float>)>()
         .AddField("Attribute", tup => TIUtilities.GetAttributeString(tup.Item1))
