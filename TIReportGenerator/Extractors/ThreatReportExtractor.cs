@@ -16,12 +16,12 @@ namespace TIReportGenerator.Extractors
                 Severity = xf.severityDescription
             };
         }
-        
+
         private static IEnumerable<Protos.XenoformingSite> ExtractXenoformingSites(TIFactionState player)
         {
             return player.KnownXenoforming.Select(ExtractXenoformingSite);
         }
-        
+
         private static Protos.XenoCouncilor ExtractCouncilor(TICouncilorState xeno, TIFactionState player)
         {
             return new Protos.XenoCouncilor
@@ -31,14 +31,50 @@ namespace TIReportGenerator.Extractors
                 Mission = player.HasIntelOnCouncilorMission(xeno) ? xeno.activeMission?.missionTemplate?.displayName ?? "None" : "Unknown"
             };
         }
-        
+
         private static IEnumerable<Protos.XenoCouncilor> ExtractXenoCouncilors(TIFactionState player)
         {
             return player.knownSpies
                 .Where(spy => spy.faction == GameStateManager.AlienFaction())
                 .Select(spy => ExtractCouncilor(spy, player));
         }
-        
+
+        private static string ExtractPresumedIntent(TISpaceFleetState fleet)
+        {
+            return fleet.AssignedGoal()?.GetGoalType() switch
+            {
+                GoalType.AttackWithFleet => "hostile",
+                GoalType.InvadeEarth => "hostile",
+                GoalType.CaptureHab => "hostile",
+                GoalType.SecureEarthSpace => "hostile",
+                GoalType.SurveilEarth => "surveillance",
+                GoalType.FoundSurveillanceStation => "surveillance",
+                GoalType.DefendWithFleet => "defense",
+                GoalType.TransportCouncilorsViaFleet => "transport",
+                _ => "unknown"
+            };
+        }
+
+        private static Protos.FleetMovement ExtractFleetMovement(TISpaceFleetState fleet)
+        {
+            return new Protos.FleetMovement
+            {
+                FleetName = Util.ExtractName(fleet),
+                CombatPower = fleet.SpaceCombatValue(),
+                DepartingFrom = Util.ExtractName(fleet.trajectory.originOrbit),
+                Destination = Util.ExtractName(fleet.trajectory.destination),
+                Arrival = fleet.trajectory.arrivalTime.ToCustomTimeDateString(),
+                PresumedIntent = ExtractPresumedIntent(fleet)
+            };
+        }
+
+        private static IEnumerable<Protos.FleetMovement> ExtractFleetMovements(TIFactionState faction)
+        {
+            return faction.fleets
+                .Where(f => f.inTransfer)
+                .Select(ExtractFleetMovement);
+        }
+
         public static Protos.ThreatReport Extract()
         {
             var player = GameControl.control.activePlayer;
@@ -49,9 +85,10 @@ namespace TIReportGenerator.Extractors
                 WarHateThreshold = TIGlobalConfig.globalConfig.factionHateWarThreshold,
                 TotalWarHateThreshold = TIGlobalConfig.globalConfig.factionHateWarThreshold * 4
             };
-            
+
             data.KnownXenos.Add(ExtractXenoCouncilors(player));
             data.KnownXenoforming.Add(ExtractXenoformingSites(player));
+            data.FleetMovements.Add(ExtractFleetMovements(GameStateManager.AlienFaction()));
             return data;
         }
     };

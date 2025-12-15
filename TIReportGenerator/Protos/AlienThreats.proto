@@ -17,6 +17,15 @@ message XenoCouncilor {
     string mission = 3;
 }
 
+message FleetMovement {
+    string fleet_name = 1;
+    float combat_power = 2;
+    string departing_from = 3;
+    string destination = 4;
+    string arrival = 5;
+    string presumed_intent = 6;
+}
+
 message ThreatReport {
     string player = 1;
     float estimated_hate = 2;
@@ -24,4 +33,5 @@ message ThreatReport {
     float total_war_hate_threshold = 4;
     repeated XenoCouncilor known_xenos = 5;
     repeated XenoformingSite known_xenoforming = 6;
+    repeated FleetMovement fleet_movements = 7;
 }
