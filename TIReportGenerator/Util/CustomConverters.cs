@@ -89,4 +89,34 @@ namespace TIReportGenerator.Util
             emitter.Emit(new Scalar($"{cap.Usage}/{cap.Capacity}"));
         }
     };
+
+    public class PercentageConverter : IYamlTypeConverter
+    {
+        private static readonly Regex PercentageRegex = new(@"((\+|-)?([0-9]+)(\.[0-9]+))\s*%");
+
+        public bool Accepts(Type type)
+        {
+            return type == typeof(Protos.Percentage);
+        }
+
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            var scalar = (Scalar)parser.Current;
+            parser.MoveNext();
+
+            var match = PercentageRegex.Match(scalar.Value);
+            if (!match.Success) throw new FormatException("Unexpected format for percentage value.");
+
+            return new Protos.Percentage
+            {
+                Value = float.Parse(match.Captures[1].Value) / 100.0f
+            };
+        }
+
+        public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer serializer)
+        {
+            var p = (Protos.Percentage)value;
+            emitter.Emit(new Scalar($"{p.Value:P1%}"));
+        }
+    }
 };

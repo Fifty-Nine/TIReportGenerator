@@ -47,14 +47,17 @@ namespace TIReportGenerator
             GenerateReportsSafe();
         }
 
-        public static readonly ISerializer YamlSerializer = new SerializerBuilder()
+        public static ISerializer GetSerializer() {
+            return new SerializerBuilder()
             .WithNamingConvention(PascalCaseNamingConvention.Instance)
             .DisableAliases()
             .WithTypeConverter(new Util.QuantityConverter())
             .WithTypeConverter(new Util.ModuleListConverter())
             .WithTypeConverter(new Util.SIConverter())
             .WithTypeConverter(new Util.CapacityUseConverter())
+            .WithTypeConverter(new Util.PercentageConverter())
             .Build();
+        }
 
         public static void GenerateReportsSafe()
         {
@@ -114,43 +117,21 @@ namespace TIReportGenerator
         {
             writer.WriteLine($"# Faction Resource Report as of {TITimeState.Now()}");
 
+            var serializer = GetSerializer();
             var factions = GameStateManager.AllFactions().Select(Extractors.FactionExtractor.Extract);
-            writer.WriteLine(YamlSerializer.Serialize(factions));
-
-            Table table = new(TableConfiguration.Unicode());
-            table.From([.. factions]);
-            writer.WriteLine(table);
-        }
-
-        private static IEnumerable<(TINationState, string)> GetRelations(TINationState nation)
-        {
-            return nation.allies.Select(l => (l, "Ally"))
-                         .Concat(nation.wars.Select(l => (l, "War")))
-                         .Concat(nation.rivals.Select(l => (l, "Rival")));
+            writer.WriteLine(serializer.Serialize(factions));
         }
 
         private static void GenerateNationsReport(StreamWriter writer)
         {
             writer.WriteLine($"# Nations Report as of {TITimeState.Now()}");
 
-            foreach (var nation in GameStateManager.IterateByClass<TINationState>()) {
-                if (!nation.extant) continue;
-                writer.Write(Renderers.RenderMarkdownDescription<TINationState>(
-                    nation,
-                    Schemas.Nations
-                ));
+            var serializer = GetSerializer();
+            var nations = GameStateManager.IterateByClass<TINationState>()
+                                          .Where(n => n.extant)
+                                          .Select(Extractors.NationExtractor.Extract);
 
-                writer.WriteLine("Control Points:");
-                writer.WriteLine(Renderers.RenderMarkdownTable(nation.controlPoints, Schemas.ControlPoint));
-                writer.WriteLine("Faction Support:");
-                writer.WriteLine(Renderers.RenderMarkdownTable(nation.publicOpinion, Schemas.PublicOpinion));
-                writer.WriteLine(
-                    Renderers.RenderMarkdownTable(
-                        GetRelations(nation),
-                        Schemas.NationalRelations
-                    )
-                );
-            }
+            writer.WriteLine(serializer.Serialize(nations));
         }
 
         private static void GenerateHabsAndStationsReport(StreamWriter writer)
@@ -178,11 +159,12 @@ namespace TIReportGenerator
         {
             writer.WriteLine($"# Ship Templates Report as of {TITimeState.Now()}");
 
+            var serializer = GetSerializer();
             var allTemplates = GameStateManager.IterateByClass<TIFactionState>()
                                                .SelectMany(f => f.shipDesigns)
                                                .Select(Extractors.ShipTemplateExtractor.Extract);
 
-            writer.WriteLine(YamlSerializer.Serialize(allTemplates));
+            writer.WriteLine(serializer.Serialize(allTemplates));
         }
 
         private static bool IsAlienOnlyProject(TIProjectTemplate p)

@@ -20,3 +20,18 @@ message Quantity {
     float value = 1;
     Unit units = 2;
 }
+
+message ResourceCost
+{
+    map<string, float> costs = 1;
+}
+
+message ModuleList
+{
+    map<string, int32> modules = 1;
+}
+
+message Percentage
+{
+    float value = 1;
+}

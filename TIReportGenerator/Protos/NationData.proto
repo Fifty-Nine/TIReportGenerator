@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+import "SharedMessages.proto";
+
+message NationData {
+  string name = 1;
+  float investment_points = 2;
+  float gdp_per_capita = 3;
+  float funding = 4;
+  float boost = 5;
+  float mission_control = 6;
+  float research = 7;
+  float population = 8;
+  float government = 9;
+  float education = 10;
+  float inequality = 11;
+  float cohesion = 12;
+  float unrest = 13;
+  string sustainability = 14;
+  int32 armies = 15;
+  int32 navies = 16;
+  float miltech = 17;
+  int32 exofighters = 18;
+  int32 nukes = 19;
+  bool at_war = 20;
+
+  PublicOpinion public_opinion = 22;
+  NationalRelations relations = 23;
+  repeated ControlPointData control_points = 21;
+}
+
+message ControlPointData {
+  string owner = 1;
+  bool crackdown = 2;
+  bool executive = 3;
+  bool defended = 4;
+  float cp_cost = 5;
+}
+
+message PublicOpinion {
+  map<string, Percentage> support = 1;
+}
+
+enum NationalRelationType
+{
+  Ally = 0;
+  Rival = 1;
+  War = 2;
+};
+
+message NationalRelations {
+  map<string, NationalRelationType> relations = 1;
+};

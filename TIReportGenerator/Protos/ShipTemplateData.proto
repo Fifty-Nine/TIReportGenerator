@@ -4,9 +4,7 @@ package TIReports;
 
 option csharp_namespace = "TIReportGenerator.Protos";
 
-import "Quantity.proto";
-import "ResourceCost.proto";
-import "ModuleList.proto";
+import "SharedMessages.proto";
 
 message ShipTemplateData {
   string name = 1;
