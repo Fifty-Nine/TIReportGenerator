@@ -230,21 +230,13 @@ namespace TIReportGenerator
         {
             writer.WriteLine($"# Councilor Report as of {TITimeState.Now()}");
 
+            var serializer = GetSerializer();
             var councilors = GameStateManager.IterateByClass<TICouncilorState>()
                                              .Where(c => c.faction != null &&
-                                                         c.faction != GameStateManager.AlienFaction());
+                                                         c.faction != GameStateManager.AlienFaction())
+                                             .Select(Extractors.CouncilorExtractor.Extract);
 
-            foreach (var c in councilors)
-            {
-                writer.WriteLine(Renderers.RenderMarkdownDescription(c, Schemas.Councilor));
-                writer.WriteLine(Renderers.RenderMarkdownTable(
-                    Schemas.AllCouncilorAttributes().Where(a => a != CouncilorAttribute.Loyalty)
-                                                    .Select(a => (a, Schemas.ComputeCouncilorStatValues(c, a))),
-                    Schemas.CouncilorStats)
-                );
-                writer.WriteLine("Traits:");
-                writer.WriteLine(Renderers.RenderMarkdownList(c.traits, Schemas.Trait));
-            }
+            writer.WriteLine(serializer.Serialize(councilors));
         }
     }
 

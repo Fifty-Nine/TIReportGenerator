@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+message CouncilorData {
+    string name = 1;
+    string faction = 2;
+    string background = 3;
+    float age = 4;
+    float xp = 5;
+    string location = 6;
+    string home_region = 7;
+    string home_nation = 8;
+    string current_mission = 9;
+    map<string, float> income = 10;
+    map<string, CouncilorAttributeData> attributes = 11;
+    repeated string traits = 12;
+}
+
+message CouncilorAttributeData {
+    float total = 1;
+    float base = 2;
+    float from_traits = 3;
+    float from_orgs = 4;
+    float cap = 5;
+}
