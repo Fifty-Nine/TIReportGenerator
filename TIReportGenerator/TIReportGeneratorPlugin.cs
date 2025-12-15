@@ -57,6 +57,7 @@ namespace TIReportGenerator
             .WithTypeConverter(new Util.CapacityUseConverter())
             .WithTypeConverter(new Util.PercentageConverter())
             .WithTypeConverter(new Util.ResearchProgressConverter())
+            .WithTypeConverter(new Util.ResourceYieldConverter())
             .Build();
         }
 
@@ -169,13 +170,6 @@ namespace TIReportGenerator
             writer.WriteLine(serializer.Serialize(allTemplates));
         }
 
-        private static bool IsAlienOnlyProject(TIProjectTemplate p)
-        {
-            var aliens = GameStateManager.AlienFaction();
-
-            return p.factionPrereq.Count() == 1 && p.FactionPrereqsSatisfied(aliens) && !p.FactionPrereqsSatisfied(GameControl.control.activePlayer);
-        }
-
         private static void GenerateTechReport(StreamWriter writer)
         {
             writer.WriteLine($"# Tech Report as of {TITimeState.Now()}");
@@ -194,10 +188,12 @@ namespace TIReportGenerator
         {
             writer.WriteLine($"# Prospect Hab Site Report as of {TITimeState.Now()}");
 
-            var allBodiesAndSites = GameStateManager.AllSpaceBodies()
-                                                    .Where(body => body.habSites.Any())
-                                                    .SelectMany(b => b.habSites.Cast<TISpaceGameState>().Prepend(b));
-            writer.WriteLine(Renderers.RenderMarkdownTable(allBodiesAndSites, Schemas.HabSitesAndBodies));
+            var serializer = GetSerializer();
+            var sites = GameStateManager.AllSpaceBodies()
+                                        .Where(body => body.habSites.Any())
+                                        .Select(Extractors.ProspectingExtractor.Extract);
+
+            writer.WriteLine(serializer.Serialize(sites));
         }
 
         private static void GenerateOrgsReport(StreamWriter writer)

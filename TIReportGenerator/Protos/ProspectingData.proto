@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package TIReports;
+
+option csharp_namespace = "TIReportGenerator.Protos";
+
+enum SiteStatus
+{
+    SiteOccupied = 0;
+    SiteNotProspected = 1;
+    SiteAvailable = 2;
+}
+
+message BodyData {
+    string name = 1;
+    bool is_prospected = 2;
+    repeated SiteData sites = 3;
+}
+
+message SiteData {
+    string name = 1;
+    SiteStatus status = 2;
+    string owner = 3;
+    
+    map<string, ResourceYieldData> resources = 4;
+}
+
+message ResourceYieldData {
+    optional float yield = 1;
+    string grade = 2;
+}

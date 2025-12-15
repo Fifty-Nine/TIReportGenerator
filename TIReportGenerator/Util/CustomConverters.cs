@@ -1,5 +1,6 @@
 using System;
 using System.Text.RegularExpressions;
+using TIReportGenerator.Protos;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -136,6 +137,25 @@ namespace TIReportGenerator.Util
         {
             var progress = (Protos.ResearchProgress)value;
             emitter.Emit(new Scalar($"{SIFormatter.ToString(progress.Progress)}/{SIFormatter.ToString(progress.Cost)}"));
+        }
+    };
+
+    public class ResourceYieldConverter : IYamlTypeConverter
+    {
+        public bool Accepts(Type type)
+        {
+            return type == typeof(Protos.ResourceYieldData);
+        }
+
+        public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer serializer)
+        {
+            var yield = value as ResourceYieldData;
+            emitter.Emit(new Scalar(yield.HasYield ? $"{yield.Yield:F1} ({yield.Grade})" : yield.Grade));
         }
     };
 }

@@ -14,6 +14,15 @@ namespace TIReportGenerator.Util
                        .Where(v => v != FactionResource.None);
         }
 
+        public static IEnumerable<FactionResource> AllSpaceResources()
+        {
+            return [FactionResource.Water,
+                    FactionResource.Volatiles,
+                    FactionResource.Metals,
+                    FactionResource.NobleMetals,
+                    FactionResource.Fissiles];
+        }
+
         public static IEnumerable<TechCategory> AllTechCategories()
         {
             return Enum.GetValues(typeof(TechCategory))
