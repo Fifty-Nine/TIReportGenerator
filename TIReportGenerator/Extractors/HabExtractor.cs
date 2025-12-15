@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using Mono.Cecil.Mdb;
 using PavonisInteractive.TerraInvicta;
 using TIReportGenerator.Util;
 
@@ -14,7 +13,7 @@ namespace TIReportGenerator.Extractors
                 .Select(
                     fr => (TIUtilities.GetResourceString(fr), hab.GetNetCurrentMonthlyIncome(hab.coreFaction, fr, includeInactivesIncomeAndSupport: false))
                 )
-                .Where(p => p.Item2 >= 0.05f || p.Item2 <= -0.05f)
+                .ExcludeZeroValues(p => p.Item2)
                 .ToDictionary(p => p.Item1, p => p.Item2);
         }
 
@@ -22,7 +21,7 @@ namespace TIReportGenerator.Extractors
         {
             return GameEnums.AllTechCategories()
                 .Select(c => (c.ToString(), hab.GetNetTechBonusByFaction(c, hab.coreFaction, includeInactives: false)))
-                .Where(p => p.Item2 > 0.0001f || p.Item2 < -0.0001f)
+                .ExcludeZeroPercent(p => p.Item2)
                 .ToDictionary(p => p.Item1, p => new Protos.Percentage { Value = p.Item2});
         }
 

@@ -21,67 +21,6 @@ public static class Schemas
         return v ? "yes" : "no";
     }
 
-    private static string GetFleetStatus(TISpaceFleetState fleet)
-    {
-        if (fleet.unavailableForOperations)
-        {
-            return $"Unavailable for operations until {fleet.returnToOperationsTime.ToCustomTimeDateString()}";
-        }
-
-        if (fleet.inTransfer)
-        {
-            return $"Transferring to {PlayerDisplayName(fleet.trajectory.destination)}, arrival at {fleet.trajectory.arrivalTime.ToCustomTimeDateString()}";
-        }
-
-        if (fleet.currentOperations.Count == 0) {
-            return fleet.dockedOrLanded ? "Docked" : "Idle";
-        }
-
-        var operation = fleet.currentOperations.First();
-        return operation.operation.GetDescription();
-    }
-
-    private static (float, float) GetFleetDeltaV(TISpaceFleetState fleet)
-    {
-        return (fleet.currentDeltaV_kps, fleet.maxDeltaV_kps);
-    }
-
-    private static (float, float) GetShipDeltaV(TISpaceShipState ship)
-    {
-        return (ship.currentDeltaV_kps, ship.currentMaxDeltaV_kps);
-    }
-
-    private static string FormatDeltaV((float current, float max) deltaV)
-    {
-        return $"{deltaV.current:F1} / {deltaV.max:F1} kps";
-    }
-
-    private static string FormatAccelerationInGs(float gs)
-    {
-        if (gs >= 1.0) return $"{gs:N1} g";
-        return $"{gs*1000:N1} mg";
-    }
-
-    private static (float, float) ShipAccel(TISpaceShipState ship)
-    {
-        return (ship.combatAcceleration_gs, ship.cruiseAcceleration_gs);
-    }
-
-    private static string FormatShipAccel((float combat, float cruise) accel)
-    {
-        return $"{FormatAccelerationInGs(accel.combat)} / {FormatAccelerationInGs(accel.cruise)}";
-    }
-
-    private static string GetShipStatus(TISpaceShipState ship)
-    {
-        if (!ship.damaged) return "OK";
-
-        var ops = ship.fleet.currentOperations;
-        if (ops.Count == 0 || ops.First().operation is not RepairFleetOperation) return "Damaged";
-
-        return $"Repairing ({ops.First().completionDate.ToCustomTimeDateString()})";
-    }
-
     private static string PlayerDisplayName<T>(T obj, string nullText = "<null>") where T : TIGameState
     {
         return obj?.GetDisplayName(GameControl.control.activePlayer) ?? nullText;
@@ -352,30 +291,6 @@ public static class Schemas
         ];
         return result.ToDictionary(kvp => kvp.Item1, kvp => kvp.Item2);
     }
-
-    public static ObjectSchema<TISpaceShipState> Ships = new ObjectSchema<TISpaceShipState>()
-        .AddField("Name", s => PlayerDisplayName(s))
-        .AddField("Class", s => s.template.className)
-        .AddField("Role", s => s.template.roleStr)
-        .AddField("Template", s => s.template.displayName)
-        .AddField("Space Combat Power", s => s.SpaceCombatValue(), "N0")
-        .AddField("Assault Combat Power", s => s.AssaultCombatValue(defense: false))
-        .AddField("Delta-V", GetShipDeltaV, FormatDeltaV)
-        .AddField("Acceleration (Combat/Cruise)", ShipAccel, FormatShipAccel)
-        .AddField("Status", GetShipStatus)
-    ;
-
-    public static ObjectSchema<TISpaceFleetState> Fleets = new ObjectSchema<TISpaceFleetState>()
-        .AddField("Name", f => PlayerDisplayName(f))
-        .AddField("Faction", f => PlayerDisplayName(f.faction))
-        .AddField("Location", f => f.GetLocationDescription(GameControl.control.activePlayer, capitalize: true, expand: false))
-        .AddField("Status", GetFleetStatus)
-        .AddField("Combat Power", f => f.SpaceCombatValue(), "N0")
-        .AddField("Ships", f => f.ships.Count)
-        .AddField("Delta-V", GetFleetDeltaV, FormatDeltaV)
-        .AddField("Cruise Acc.", f => f.cruiseAcceleration_gs, FormatAccelerationInGs)
-        .AddField("Homeport", f => f.homeport?.displayName ?? "None")
-    ;
 
     public static ObjectSchema<TITechTemplate> GlobalTechs = new ObjectSchema<TITechTemplate>()
         .AddField("Name", t => t.displayName)

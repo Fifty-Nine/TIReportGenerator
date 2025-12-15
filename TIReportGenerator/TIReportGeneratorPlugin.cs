@@ -149,11 +149,11 @@ namespace TIReportGenerator
         {
             writer.WriteLine($"# Fleets Report as of {TITimeState.Now()}");
 
-            foreach (var fleet in GameStateManager.IterateByClass<TISpaceFleetState>())
-            {
-                writer.WriteLine(Renderers.RenderMarkdownDescription(fleet, Schemas.Fleets));
-                writer.WriteLine(Renderers.RenderMarkdownTable(fleet.ships, Schemas.Ships));
-            }
+            var serializer = GetSerializer();
+            var fleets = GameStateManager.IterateByClass<TISpaceFleetState>()
+                                         .Select(Extractors.FleetExtractor.Extract);
+
+            writer.WriteLine(serializer.Serialize(fleets));
         }
 
         private static void GenerateShipTemplateReport(StreamWriter writer)
