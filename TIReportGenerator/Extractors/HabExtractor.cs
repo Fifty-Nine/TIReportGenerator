@@ -37,6 +37,7 @@ namespace TIReportGenerator.Extractors
             {
                 Name = Util.ExtractName(hab),
                 Type = hab.habType.ToString(),
+                Faction = Util.ExtractName(hab.coreFaction),
                 Location = hab.LocationName,
                 Tier = hab.tier,
                 DockedFleets = hab.dockedFleets.Count,
