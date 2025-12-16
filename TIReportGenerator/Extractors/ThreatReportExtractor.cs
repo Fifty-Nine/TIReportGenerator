@@ -51,6 +51,11 @@ namespace TIReportGenerator.Extractors
                 GoalType.FoundSurveillanceStation => "surveillance",
                 GoalType.DefendWithFleet => "defense",
                 GoalType.TransportCouncilorsViaFleet => "transport",
+                GoalType.JoinFleet => "rendezvous",
+                GoalType.AssembleFleet => "rendezvous",
+                GoalType.ResupplyFleet => "logistics",
+                GoalType.RepairFleet => "logistics",
+                GoalType.RefitFleet => "logistics",
                 _ => "unknown"
             };
         }
@@ -82,9 +87,11 @@ namespace TIReportGenerator.Extractors
             {
                 Player = Util.ExtractName(player),
                 EstimatedHate = player.GetEstimatedAlienHate(),
+                MinimumHateFromMissionControl = GameStateManager.AlienFaction().MCBasedAlienHate(player),
                 WarHateThreshold = TIGlobalConfig.globalConfig.factionHateWarThreshold,
                 TotalWarHateThreshold = TIGlobalConfig.globalConfig.factionHateWarThreshold * 4
             };
+
 
             data.KnownXenos.Add(ExtractXenoCouncilors(player));
             data.KnownXenoforming.Add(ExtractXenoformingSites(player));

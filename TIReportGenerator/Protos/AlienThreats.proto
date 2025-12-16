@@ -29,9 +29,10 @@ message FleetMovement {
 message ThreatReport {
     string player = 1;
     float estimated_hate = 2;
-    float war_hate_threshold = 3;
-    float total_war_hate_threshold = 4;
-    repeated XenoCouncilor known_xenos = 5;
-    repeated XenoformingSite known_xenoforming = 6;
-    repeated FleetMovement fleet_movements = 7;
+    float minimum_hate_from_mission_control = 3;
+    float war_hate_threshold = 4;
+    float total_war_hate_threshold = 5;
+    repeated XenoCouncilor known_xenos = 6;
+    repeated XenoformingSite known_xenoforming = 7;
+    repeated FleetMovement fleet_movements = 8;
 }
