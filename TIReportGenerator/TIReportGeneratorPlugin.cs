@@ -44,6 +44,7 @@ namespace TIReportGenerator
         public static void CompleteInitPostfix()
         {
             TIReportGeneratorPlugin.Log.LogInfo("GameControl initialization complete.");
+            Harmony.CreateAndPatchAll(typeof(TIFactionStatePatch));
             GenerateReportsSafe();
         }
 
@@ -267,4 +268,18 @@ namespace TIReportGenerator
             GameControlPatch.GenerateReports();
         }
     }
+
+    [HarmonyPatch(typeof(TIFactionState))]
+    public static class TIFactionStatePatch
+    {
+        [HarmonyPatch(nameof(TIFactionState.GainFactionHate))]
+        [HarmonyPrefix]
+        public static void GainFactionHatePrefix(TIFactionState __instance, TIFactionState enemyCouncil, float value, bool cantConflagrate, string cause, bool randomize)
+        {
+            TIReportGeneratorPlugin.Log.LogInfo(
+                $"{__instance?.displayName} gaining {value:F1} hate for {enemyCouncil?.displayName}" +
+                ((cause ?? "") != "" ? $"Reason: {cause}" : "")
+            );
+        }
+    };
 }
